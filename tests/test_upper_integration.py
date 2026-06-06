@@ -76,7 +76,7 @@ async def gateway_runtime(sample_pointlist, free_port):
 
 
 async def test_northbound_consumer_can_enumerate_and_read(gateway_runtime, free_port):
-    runtime, cfg, _av = gateway_runtime
+    _runtime, cfg, _av = gateway_runtime
     target = f"127.0.0.1:{cfg.network.port}"
     consumer = build_client(f"127.0.0.1:{free_port()}")  # acts like a Hono BACnet connector
     try:
@@ -100,3 +100,17 @@ async def test_control_loop_north_write_to_south(gateway_runtime, free_port):  #
         app_client.close()
     published = runtime.manager.transport.published
     assert any(ch.endswith("/command") for ch, _payload in published)
+
+
+def test_network_tolerates_explicit_nulls():
+    # foreign_ttl: null / bbmd_bdt: null must not crash config loading (review #35).
+    from bbc_sim.yaml_generator.yaml_io import dict_to_config
+
+    d = {
+        "bbc": {"bbc_id": "b", "device_id": 1001},
+        "network": {"foreign_ttl": None, "bbmd_bdt": None},
+        "objects": [],
+    }
+    cfg = dict_to_config(d)
+    assert cfg.network.foreign_ttl == 30
+    assert cfg.network.bbmd_bdt == []

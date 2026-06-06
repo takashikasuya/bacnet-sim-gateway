@@ -185,8 +185,8 @@ def dict_to_config(d: dict[str, Any]) -> SimulatorConfig:
             bind_address=net.get("bind_address", "0.0.0.0"),
             port=int(net.get("port", 47808)),
             foreign_bbmd=net.get("foreign_bbmd"),
-            foreign_ttl=int(net.get("foreign_ttl", 30)),
-            bbmd_bdt=list(net.get("bbmd_bdt", [])),
+            foreign_ttl=int(net.get("foreign_ttl") or 30),  # tolerate explicit null
+            bbmd_bdt=list(net.get("bbmd_bdt") or []),
         ),
         objects=[_object_from_dict(o) for o in d.get("objects", [])],
         mode=RuntimeMode(d.get("mode", "simulator")),

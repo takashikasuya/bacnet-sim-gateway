@@ -36,7 +36,7 @@ jobs:
         run: uv sync --extra dev
       - name: Start Mosquitto (anonymous)
         run: |
-          docker run -d --name mosquitto -p 1883:1883 \
+          docker run -d --name mosquitto -p 127.0.0.1:1883:1883 \
             -v "$PWD/docker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro" \
             eclipse-mosquitto:2
           sleep 3
