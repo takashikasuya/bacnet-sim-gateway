@@ -14,6 +14,9 @@ def register(app: typer.Typer) -> None:
     @app.command("run")
     def run(
         config: Path = typer.Option(..., "--config", "-c", help="simulator.yaml"),
+        transport: str | None = typer.Option(
+            None, "--transport", help="southbound transport URI (mqtt://host:port, zmq://...)"
+        ),
     ) -> None:
         """Start the virtual B-BC and serve it on BACnet/IP (northbound)."""
         errors = validate_yaml(config)
@@ -23,6 +26,6 @@ def register(app: typer.Typer) -> None:
             raise typer.Exit(code=1)
         typer.secho(f"starting B-BC from {config} (Ctrl-C to stop)", fg=typer.colors.GREEN)
         try:
-            run_from_path(config)
+            run_from_path(config, transport_uri=transport)
         except KeyboardInterrupt:  # pragma: no cover - interactive
             typer.echo("stopped")

@@ -34,6 +34,20 @@ class PointListError(Exception):
     """Raised when an SBCO point list cannot be read (structural error)."""
 
 
+class RuntimeMode(StrEnum):
+    """Value-source mode (operating-modes.md). Orthogonal to device-mapping mode."""
+
+    simulator = "simulator"  # values internally generated
+    gateway = "gateway"      # values sourced from southbound bindings
+    combined = "combined"    # per-object: simulate or bind
+
+
+class BindingDirection(StrEnum):
+    telemetry = "telemetry"  # south -> BACnet presentValue
+    command = "command"      # north WriteProperty -> south
+    both = "both"
+
+
 class BacnetObjectType(StrEnum):
     """BACnet object types used by this simulator, with ASHRAE 135 enum values."""
 
@@ -134,6 +148,27 @@ class UpdateConfig:
 
 
 @dataclass
+class BindingMapping:
+    """Value transform between southbound payload and BACnet presentValue."""
+
+    type: str = "real"  # real | boolean | unsigned | enum
+    scale: float = 1.0
+    offset: float = 0.0
+    value_path: str | None = None
+    enum_map: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class BindingSpec:
+    """Southbound binding for one object (southbound-binding.md §1)."""
+
+    protocol: str  # mqtt | zeromq | wot | grpc
+    direction: BindingDirection = BindingDirection.telemetry
+    address: str | None = None  # explicit channel/topic; else derived (local_id-first)
+    mapping: BindingMapping = field(default_factory=BindingMapping)
+
+
+@dataclass
 class BacnetObjectSpec:
     """A BACnet object as it will appear in simulator.yaml."""
 
@@ -153,6 +188,7 @@ class BacnetObjectSpec:
     description: str = ""
     update: UpdateConfig = field(default_factory=UpdateConfig)
     metadata: dict[str, object] = field(default_factory=dict)
+    binding: BindingSpec | None = None
 
 
 @dataclass
@@ -160,3 +196,4 @@ class SimulatorConfig:
     bbc: BbcConfig
     network: NetworkConfig
     objects: list[BacnetObjectSpec] = field(default_factory=list)
+    mode: RuntimeMode = RuntimeMode.simulator

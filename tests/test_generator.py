@@ -87,7 +87,7 @@ def test_yaml_roundtrip(config, tmp_path):
 
 def test_config_dict_matches_spec_schema(config):
     d = config_to_dict(config)
-    assert set(d.keys()) == {"bbc", "network", "objects"}
+    assert set(d.keys()) == {"bbc", "network", "objects", "mode"}
     assert d["bbc"]["device_id"] == 1001
     assert d["network"]["port"] == 47808
     assert d["objects"][0]["object_type"] in {t.value for t in BacnetObjectType}
