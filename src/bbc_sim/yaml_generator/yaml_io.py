@@ -16,7 +16,11 @@ from bbc_sim.models import (
     BacnetObjectSpec,
     BacnetObjectType,
     BbcConfig,
+    BindingDirection,
+    BindingMapping,
+    BindingSpec,
     NetworkConfig,
+    RuntimeMode,
     SimulatorConfig,
     UpdateConfig,
 )
@@ -55,6 +59,21 @@ def _object_to_dict(o: BacnetObjectSpec) -> dict[str, Any]:
         d["update"] = upd
     if o.metadata:
         d["metadata"] = o.metadata
+    if o.binding is not None:
+        b: dict[str, Any] = {
+            "protocol": o.binding.protocol,
+            "direction": o.binding.direction.value,
+        }
+        if o.binding.address is not None:
+            b["address"] = o.binding.address
+        m = o.binding.mapping
+        mapping: dict[str, Any] = {"type": m.type, "scale": m.scale, "offset": m.offset}
+        if m.value_path is not None:
+            mapping["value_path"] = m.value_path
+        if m.enum_map:
+            mapping["enum_map"] = m.enum_map
+        b["mapping"] = mapping
+        d["binding"] = b
     return d
 
 
@@ -73,6 +92,7 @@ def config_to_dict(config: SimulatorConfig) -> dict[str, Any]:
             "bind_address": config.network.bind_address,
             "port": config.network.port,
         },
+        "mode": config.mode.value,
         "objects": [_object_to_dict(o) for o in config.objects],
     }
 
@@ -89,6 +109,24 @@ def _coerce_bool(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in ("true", "1", "yes", "y", "on")
     return bool(value)
+
+
+def _binding_from_dict(b: dict[str, Any] | None) -> BindingSpec | None:
+    if not b:
+        return None
+    m = b.get("mapping") or {}
+    return BindingSpec(
+        protocol=b["protocol"],
+        direction=BindingDirection(b.get("direction", "telemetry")),
+        address=b.get("address"),
+        mapping=BindingMapping(
+            type=m.get("type", "real"),
+            scale=float(m.get("scale", 1.0)),
+            offset=float(m.get("offset", 0.0)),
+            value_path=m.get("value_path"),
+            enum_map=dict(m.get("enum_map", {})),
+        ),
+    )
 
 
 def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
@@ -110,6 +148,7 @@ def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
         description=d.get("description", ""),
         update=UpdateConfig(interval=upd.get("interval"), mode=upd.get("mode")),
         metadata=dict(d.get("metadata", {})),
+        binding=_binding_from_dict(d.get("binding")),
     )
 
 
@@ -131,6 +170,7 @@ def dict_to_config(d: dict[str, Any]) -> SimulatorConfig:
             port=int(net.get("port", 47808)),
         ),
         objects=[_object_from_dict(o) for o in d.get("objects", [])],
+        mode=RuntimeMode(d.get("mode", "simulator")),
     )
 
 
@@ -159,6 +199,15 @@ def validate_config(config: SimulatorConfig) -> list[str]:
         s.add(o.object_instance)
         if o.object_type.is_multistate and not o.state_text:
             errors.append(f"{o.point_id}: multi-state object missing state_text")
+        if (
+            o.binding
+            and o.binding.direction in (BindingDirection.command, BindingDirection.both)
+            and not o.writable
+        ):
+            errors.append(
+                f"{o.point_id}: command binding requires writable=true "
+                "(non-writable objects reject WriteProperty)"
+            )
     return errors
 
 

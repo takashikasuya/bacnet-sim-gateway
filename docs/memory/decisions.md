@@ -25,10 +25,11 @@ metadata:
 | ADR-010 | ランタイムは single-loop asyncio。Core Object Model は event-loop 閉じ込め・no blocking | decisions.md |
 | ADR-011 | device-mapping mode（aggregated/multi-device/auto-partition）。runtime mode と直交。1 instance=1 Virtual B-BC（1..N BACnet Device 公開） | SBCO pointlist |
 | ADR-012 | device_type=Brick クラス採用。BACnet セマンティックタグは Brick から導出。SBCO tags 列はビルOS検索タグで別物 | SBCO schema |
+| ADR-013 | 南向きは Transport 抽象（subscribe/publish）。InMemory（CI 既定）＋ MQTT/ZeroMQ（integration）。値変換は mapping に集約 | EP-002 |
 
 ## Pending Decisions
 
-- 南向きバインディングの内部モデル抽象（プロトコル非依存層の API 形）→ MVP-2 着手時に ADR 化
+- ~~南向きバインディングの内部モデル抽象~~ → 確定（[[ADR-013]]）。残: 各プロトコルの auth/TLS/QoS/retain、gRPC 具象 transport（EP-006）
 
 ### 下流設計書 v0.1 が surface した未決事項（❓）
 
