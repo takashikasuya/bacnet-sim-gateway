@@ -118,6 +118,13 @@ def dump_config(config: SimulatorConfig, path: str | Path) -> None:
     )
 
 
+def _coerce_bool(value: Any) -> bool:
+    """Interpret YAML/JSON truthiness, including quoted strings like 'false'/'no'."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y", "on")
+    return bool(value)
+
+
 def _binding_from_dict(b: dict[str, Any] | None) -> BindingSpec | None:
     if not b:
         return None
@@ -151,12 +158,12 @@ def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
         active_text=d.get("active_text"),
         inactive_text=d.get("inactive_text"),
         scale=float(d.get("scale", 1.0)),
-        writable=bool(d.get("writable", False)),
+        writable=_coerce_bool(d.get("writable", False)),
         description=d.get("description", ""),
         update=UpdateConfig(
             interval=upd.get("interval"),
             mode=upd.get("mode"),
-            params=dict(upd.get("params", {})),
+            params=dict(upd.get("params") or {}),  # tolerate `params: null`
         ),
         metadata=dict(d.get("metadata", {})),
         binding=_binding_from_dict(d.get("binding")),
@@ -181,8 +188,8 @@ def dict_to_config(d: dict[str, Any]) -> SimulatorConfig:
             bind_address=net.get("bind_address", "0.0.0.0"),
             port=int(net.get("port", 47808)),
             foreign_bbmd=net.get("foreign_bbmd"),
-            foreign_ttl=int(net.get("foreign_ttl", 30)),
-            bbmd_bdt=list(net.get("bbmd_bdt", [])),
+            foreign_ttl=int(net.get("foreign_ttl") or 30),  # tolerate explicit null
+            bbmd_bdt=list(net.get("bbmd_bdt") or []),
         ),
         objects=[_object_from_dict(o) for o in d.get("objects", [])],
         mode=RuntimeMode(d.get("mode", "simulator")),
@@ -229,6 +236,6 @@ def validate_config(config: SimulatorConfig) -> list[str]:
 def validate_yaml(path: str | Path) -> list[str]:
     try:
         config = load_config(path)
-    except (KeyError, ValueError, yaml.YAMLError) as exc:
+    except (KeyError, ValueError, TypeError, AttributeError, yaml.YAMLError) as exc:
         return [f"invalid simulator.yaml: {exc}"]
     return validate_config(config)

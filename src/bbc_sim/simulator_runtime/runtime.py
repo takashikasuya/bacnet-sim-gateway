@@ -8,12 +8,15 @@ actually drives values, serves bindings, and exposes the control plane.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
 from bbc_sim.models import RuntimeMode, SimulatorConfig
 from bbc_sim.simulation.engine import SimulationEngine
 from bbc_sim.simulation.fault import FaultController
 from bbc_sim.simulator_runtime.app import BBCApplication, build_application
+
+_log = logging.getLogger(__name__)
 
 
 class Runtime:
@@ -38,7 +41,7 @@ class Runtime:
         self.engine: SimulationEngine | None = None
         if config.mode in (RuntimeMode.simulator, RuntimeMode.combined):
             engine = SimulationEngine(self.app, config, self.faults, tick_seconds)
-            if engine._generators:  # only run if something is actually generated
+            if engine.has_generators():  # only run if something is actually generated
                 self.engine = engine
 
         self.manager: Any = None  # SouthboundManager (gateway/combined)
@@ -52,6 +55,12 @@ class Runtime:
         needs_southbound = self.config.mode is not RuntimeMode.simulator and any(
             o.binding for o in self.config.objects
         )
+        if needs_southbound and not self.transport_uri:
+            _log.warning(
+                "mode=%s with bound object(s) but no transport_uri; southbound bindings "
+                "are inactive (use memory:// for an in-process fake)",
+                self.config.mode.value,
+            )
         if needs_southbound and self.transport_uri:
             from bbc_sim.southbound.binding import SouthboundManager
             from bbc_sim.southbound.factory import make_transport
