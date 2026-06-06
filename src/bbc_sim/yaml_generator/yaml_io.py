@@ -59,6 +59,8 @@ def _object_to_dict(o: BacnetObjectSpec) -> dict[str, Any]:
         if o.update.params:
             upd["params"] = o.update.params
         d["update"] = upd
+    if o.tags:
+        d["tags"] = o.tags
     if o.metadata:
         d["metadata"] = o.metadata
     if o.binding is not None:
@@ -165,6 +167,7 @@ def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
         ),
         metadata=dict(d.get("metadata", {})),
         binding=_binding_from_dict(d.get("binding")),
+        tags=list(d.get("tags", [])),
     )
 
 
