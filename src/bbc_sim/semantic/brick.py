@@ -38,6 +38,40 @@ _POINT_SEED: dict[str, list[str]] = {
 }
 
 
+# device_type / point_type -> Brick class names (for semantic export, ADR-012).
+_DEVICE_BRICK_CLASS: dict[str, str] = {
+    "AirHandlingUnit": "AHU",
+    "AHU": "AHU",
+    "VAV": "VAV",
+    "Chiller": "Chiller",
+    "Boiler": "Boiler",
+    "Meter": "Meter",
+    "Sensor": "Equipment",
+}
+_POINT_BRICK_CLASS: dict[str, str] = {
+    "Temperature": "Air_Temperature_Sensor",
+    "Humidity": "Humidity_Sensor",
+    "CO2 Concentration": "CO2_Sensor",
+    "Illuminance": "Illuminance_Sensor",
+    "Motion": "Occupancy_Sensor",
+    "Flow Rate": "Flow_Sensor",
+    "HVAC Control": "Command",
+    "Setpoint": "Setpoint",
+    "Power": "Electrical_Power_Sensor",
+    "Energy": "Energy_Sensor",
+}
+
+
+def equipment_class(device_type: str) -> str:
+    """Brick Equipment class for a device_type (defaults to Equipment)."""
+    return _DEVICE_BRICK_CLASS.get(device_type.strip(), "Equipment")
+
+
+def point_class(point_type: str) -> str:
+    """Brick Point class for a point_type (defaults to Point)."""
+    return _POINT_BRICK_CLASS.get(point_type.strip(), "Point")
+
+
 def derive_tags(device_type: str, point_type: str) -> list[str]:
     """Return a deterministic, sorted, de-duplicated tag set for an object.
 

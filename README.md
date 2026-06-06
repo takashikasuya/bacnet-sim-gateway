@@ -23,6 +23,20 @@ uv run bbc-sim run --config config/simulator.yaml
 | `bbc-sim run` | 仮想 B-BC 起動（BACnet/IP 北向き） |
 | `bbc-sim whois` / `read-property` / `read-property-multiple` / `write-property` / `list-objects` | クライアント疎通 |
 
+## Export (standards artifacts & semantic model, EP-006)
+
+```bash
+uv run bbc-sim export -f ede    -c config/simulator.yaml -o out.csv     # EDE CSV
+uv run bbc-sim export -f ieiej  -c config/simulator.yaml                # IEIEJ-style CSV
+uv run bbc-sim export -f pics   -c config/simulator.yaml                # PICS / BIBBs
+uv run bbc-sim export -f jsonld -c config/simulator.yaml                # Brick/REC JSON-LD
+uv run bbc-sim export -f wot    -c config/simulator.yaml                # WoT Thing Description
+```
+
+**Future (not yet implemented):** BACnet/SC (PR-F-071), future objects Schedule/TrendLog/
+NotificationClass/Calendar/Accumulator (PR-F-070), WoT *southbound* binding (PR-F-086),
+QUDT/full-REC export, BTL certification support. See `docs/backlog/epic/EP-006-*`.
+
 ## Docker (optional, ADR-008)
 
 ```bash
