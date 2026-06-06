@@ -8,6 +8,7 @@ event-loop-confined (ADR-010): inbound messages are scheduled with
 from __future__ import annotations
 
 import asyncio
+import threading
 
 import paho.mqtt.client as mqtt
 
@@ -22,6 +23,8 @@ class MqttTransport:
         self.port = port
         self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self._handlers: dict[str, list[Handler]] = {}
+        # subscribe() runs on the asyncio thread, _on_message on paho's loop thread.
+        self._lock = threading.Lock()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._client.on_message = self._on_message
 
@@ -35,7 +38,8 @@ class MqttTransport:
         self._client.disconnect()
 
     def subscribe(self, channel: str, handler: Handler) -> None:
-        self._handlers.setdefault(channel, []).append(handler)
+        with self._lock:
+            self._handlers.setdefault(channel, []).append(handler)
         self._client.subscribe(channel)
 
     async def publish(self, channel: str, payload: bytes) -> None:
@@ -45,7 +49,9 @@ class MqttTransport:
         if self._loop is None:
             return
         topic, payload = msg.topic, bytes(msg.payload)
-        for handler in self._handlers.get(topic, []):
+        with self._lock:  # snapshot handlers to avoid racing subscribe()
+            handlers = list(self._handlers.get(topic, []))
+        for handler in handlers:
 
             async def _dispatch(h: Handler = handler) -> None:
                 await h(topic, payload)
