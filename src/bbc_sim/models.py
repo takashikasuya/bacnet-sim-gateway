@@ -140,6 +140,12 @@ class NetworkConfig:
     type: str = "bacnet-ip"
     bind_address: str = "0.0.0.0"
     port: int = 47808
+    # Cross-subnet discovery (requirements §12, PR-F-041, AC-10).
+    # foreign_bbmd set -> register as a Foreign Device with that BBMD.
+    # bbmd_bdt set     -> act as a BBMD with this broadcast distribution table.
+    foreign_bbmd: str | None = None
+    foreign_ttl: int = 30
+    bbmd_bdt: list[str] = field(default_factory=list)
 
 
 @dataclass

@@ -23,3 +23,22 @@ jobs:
         run: uv run mypy
       - name: Pytest (unit + loopback, excludes integration)
         run: uv run pytest
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+      - name: Sync deps
+        run: uv sync --extra dev
+      - name: Start Mosquitto (anonymous)
+        run: |
+          docker run -d --name mosquitto -p 127.0.0.1:1883:1883 \
+            -v "$PWD/docker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro" \
+            eclipse-mosquitto:2
+          sleep 3
+      - name: Pytest (integration only)
+        run: uv run pytest -m integration

@@ -1,0 +1,30 @@
+# Integration environment (EP-004): B-BC in gateway mode + MQTT broker + a mock
+# southbound device and a mock upper consumer. Hono/Ditto/Building OS are represented
+# by mocks/manual steps (real systems are out of scope to run in CI; see README).
+#
+# Usage: docker compose -f docker/docker-compose.integration.yml up --build
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    network_mode: host
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  bbc-sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    network_mode: host  # BACnet/IP broadcast (ADR-008, pitfalls.md)
+    depends_on: [mosquitto]
+    volumes:
+      - ../config:/app/config:ro
+    command:
+      - run
+      - --config
+      - config/simulator.yaml
+      - --mode
+      - gateway
+      - --transport
+      - mqtt://127.0.0.1:1883
+      - --rest-port
+      - "8080"
