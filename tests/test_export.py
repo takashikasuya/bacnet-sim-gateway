@@ -8,7 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from bbc_sim.cli import app
-from bbc_sim.export.artifacts import export, to_ede, to_jsonld, to_pics, to_wot_td
+from bbc_sim.export.artifacts import export, to_ede, to_ieiej, to_jsonld, to_pics, to_wot_td
 from bbc_sim.yaml_generator.generator import generate_config
 from bbc_sim.yaml_generator.pointlist import read_point_list
 
@@ -46,6 +46,27 @@ def test_jsonld_is_brick_graph(config):
     temp = next(n for n in nodes if n["@id"].endswith("/PT001"))
     assert temp["@type"] == "brick:Air_Temperature_Sensor"
     assert "temp" in temp["haystack:tags"]
+    # all 8 fixture points share one equipment instance (same SBCO device_id)
+    equip_iris = {n["brick:isPointOf"]["@id"] for n in nodes if "brick:isPointOf" in n}
+    assert len(equip_iris) == 1
+    equip = next(n for n in nodes if n["@id"] in equip_iris)
+    assert equip["@type"] == "brick:AHU"
+
+
+def test_ieiej_lists_objects(config):
+    text = to_ieiej(config)
+    lines = [ln for ln in text.splitlines() if ln]
+    assert len(lines) == 1 + 8  # header + 8 objects
+    assert "オブジェクト種別" in lines[0]
+
+
+def test_pics_includes_unconfirmed_cov_bibb(config):
+    assert "DS-COVU-B" in to_pics(config)
+
+
+def test_wot_multistate_is_integer(config):
+    td = to_wot_td(config)
+    assert td["properties"]["PT007"]["type"] == "integer"  # multiStateValue
 
 
 def test_wot_td_has_properties(config):

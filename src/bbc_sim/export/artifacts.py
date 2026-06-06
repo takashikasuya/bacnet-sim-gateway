@@ -29,7 +29,9 @@ SUPPORTED_SERVICES = [
     "SubscribeCOV",
     "ConfirmedCOVNotification / UnconfirmedCOVNotification",
 ]
-SUPPORTED_BIBBS = ["DS-RP-B", "DS-RPM-B", "DS-WP-B", "DS-WPM-B", "DS-COV-B", "DM-DDB-B"]
+SUPPORTED_BIBBS = [
+    "DS-RP-B", "DS-RPM-B", "DS-WP-B", "DS-WPM-B", "DS-COV-B", "DS-COVU-B", "DM-DDB-B",
+]
 
 
 def to_ede(config: SimulatorConfig) -> str:
@@ -104,18 +106,28 @@ def to_jsonld(config: SimulatorConfig) -> dict[str, Any]:
         "rdfs:label": config.bbc.object_name,
         "brick:hasPoint": [f"{device_id}/{o.point_id}" for o in config.objects],
     })
+    equipment: dict[str, dict[str, Any]] = {}
     for o in config.objects:
         dt = str(o.metadata.get("device_type", ""))
         pt = str(o.metadata.get("point_type", ""))
+        equip_key = str(o.metadata.get("device_id") or "equip")
+        equip_iri = f"{device_id}/equip/{equip_key}"
+        # one shared equipment instance node per SBCO device_id
+        equipment.setdefault(equip_iri, {
+            "@id": equip_iri,
+            "@type": f"brick:{equipment_class(dt)}",
+            "rdfs:label": str(o.metadata.get("device_name", equip_key)),
+        })
         graph.append({
             "@id": f"{device_id}/{o.point_id}",
             "@type": f"brick:{point_class(pt)}",
             "rdfs:label": o.object_name,
-            "brick:isPointOf": {"@type": f"brick:{equipment_class(dt)}"},
+            "brick:isPointOf": {"@id": equip_iri},
             "bacnet:object-type": o.object_type.value,
             "bacnet:object-instance": o.object_instance,
             "haystack:tags": o.tags,
         })
+    graph.extend(equipment.values())
     return {
         "@context": {
             "brick": "https://brickschema.org/schema/Brick#",
@@ -131,9 +143,15 @@ def to_wot_td(config: SimulatorConfig) -> dict[str, Any]:
     """W3C WoT Thing Description for the B-BC (northbound read model)."""
     properties: dict[str, Any] = {}
     for o in config.objects:
+        if o.object_type.is_analog:
+            wot_type = "number"
+        elif o.object_type.is_multistate:
+            wot_type = "integer"
+        else:
+            wot_type = "string"
         properties[o.point_id] = {
             "title": o.object_name,
-            "type": "number" if o.object_type.is_analog else "string",
+            "type": wot_type,
             "readOnly": not o.writable,
             "bacnet:objectType": o.object_type.value,
             "bacnet:objectInstance": o.object_instance,
