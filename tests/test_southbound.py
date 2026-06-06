@@ -181,3 +181,15 @@ def test_command_binding_on_nonwritable_is_invalid(sample_pointlist):
     ai.binding = BindingSpec(protocol="mqtt", direction=BindingDirection.command)
     errors = validate_config(cfg)
     assert any("command binding requires writable" in e for e in errors)
+
+
+def test_command_scale_zero_raises(sample_pointlist):
+    # scale=0 would silently emit 0.0 and mask a config error -> must raise (review #33).
+    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
+    o = next(x for x in cfg.objects if x.point_id == "PT006")  # analogValue
+    o.binding = BindingSpec(
+        protocol="mqtt", direction=BindingDirection.command,
+        mapping=BindingMapping(scale=0.0),
+    )
+    with pytest.raises(ValueError):
+        present_value_to_command(o, 5.0)

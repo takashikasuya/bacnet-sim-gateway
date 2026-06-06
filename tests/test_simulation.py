@@ -56,3 +56,8 @@ def test_scenario_holds_then_steps():
 def test_unknown_mode_raises():
     with pytest.raises(ValueError):
         make_generator(_analog(mode="teleport"))
+
+
+def test_sinusoidal_rejects_nonpositive_period():
+    with pytest.raises(ValueError):
+        make_generator(_analog(mode="sinusoidal", params={"period": 0}))
