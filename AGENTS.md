@@ -48,6 +48,8 @@ Before implementing a feature:
 5. Run tests.
 6. Report deliverables (see §6).
 
+詳細なプロセス（ブランチモデル・Issue 分解・TDD ループ・レビューゲート・エピック毎 PR・CI）は `docs/development-workflow.md`。テストドリブン・1 エピック=1 PR・`main` 直接 merge 禁止が要点。
+
 When requirements are unclear:
 
 - Ask questions.
