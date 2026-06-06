@@ -9,9 +9,10 @@
 ## Acceptance Criteria（対応 AC / 要求）
 
 - [ ] `tags` プロパティを設け ReadProperty/RPM で取得可能（PR-F-016）
-- [ ] SBCO `tags` 列から決定的に生成（AC-14 / PR-F-017）
-- [ ] 語彙 = BACnet 標準タグ ＋ Project Haystack 既定、未知タグは検証で警告し保持（PR-F-018 / PR-NF-018）
+- [ ] **device_type/point_type の Brick クラスから決定的に生成**（Brick→Haystack seed 写像）（AC-14 / PR-F-017 / [[ADR-012]]）
+- [ ] SBCO `tags` 列は `metadata.search_tags` に verbatim 保持（検索タグ・別概念）
+- [ ] 語彙 = BACnet 標準タグ ＋ Project Haystack（PR-F-018 / PR-NF-018）
 
 ## Specs / ADR
 
-決定: [[ADR-006]]。将来の本格意味モデル出力は [[EP-006]]（PR-F-073, MVP-3）。
+決定: [[ADR-006]]（語彙）, [[ADR-012]]（Brick 由来生成）。device_type→Brick 写像 seed が前提。将来の本格意味モデル出力（Brick/REC）は [[EP-006]]（PR-F-073, MVP-3）。

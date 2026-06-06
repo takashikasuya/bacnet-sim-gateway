@@ -1,6 +1,6 @@
 # Backlog — Index
 
-製品要求は `PRD-v1.4.md`（何を・なぜ・どこまで）。Epic は MVP フェーズに対応。
+製品要求は `PRD-v1.5.md`（何を・なぜ・どこまで）。Epic は MVP フェーズに対応。
 
 ## Epics
 
@@ -12,6 +12,8 @@
 | [EP-004](epic/EP-004-upper-integration.md) | 上位連携（Hono/Ditto/Building OS）・BBMD・CI | 2 |
 | [EP-005](epic/EP-005-semantic-tags.md) | セマンティックタグ（BACnet tags ＋ Haystack） | 2 |
 | [EP-006](epic/EP-006-standards-artifacts-sc.md) | BACnet/SC・PICS/EDE・意味モデル・WoT | 3 |
+
+> **device-mapping mode（[[ADR-011]] / `../specs/device-mapping.md`）** は runtime mode と直交する横断機能: `aggregated`=MVP-1（EP-001）、`multi-device`=MVP-2（多 Device 公開は BBMD と同マイルストーン＝EP-004）、`auto-partition`=MVP-3（EP-006）。
 
 ## 次のアクション
 

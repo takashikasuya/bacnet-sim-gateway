@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |------|------|
 | 文書名 | SBCO BACnet B-BC Simulator / Gateway 製品要求仕様書 (Product Requirements Specification) |
-| バージョン | v1.4 (Draft) |
+| バージョン | v1.5 (Draft) |
 | 上位/関連文書 | SBCO BACnet B-BC Simulator 要件定義書 v1.1 (`../specs/requirements-definition-v1.1.md`) |
 | 位置づけ | 要件定義書の上位文書。「何を・なぜ・誰のために・どこまで満たせば完成か」を定義する |
 | 対象読者 | プロダクトオーナー、システムエンジニア、開発者、品質保証、連携製品開発者 |
@@ -19,6 +19,7 @@
 | v1.2 | **バインディングの方向性を修正**。ノースバウンド＝BACnet/IP（上位接続ゲートウェイが取り込む）、サウスバウンド＝MQTT / ZeroMQ / Web of Things / gRPC のバインディングに再定義。ゲートウェイモードを「南向きプロトコルのデータ源を BACnet オブジェクト化して北向きへ公開する」構成として明確化 |
 | v1.3 | 各 BACnet オブジェクトに**セマンティックタグ（`tags` プロパティ）**を付与する要求を追加。SBCO `tags` 列から決定的に生成し、語彙は **BACnet 標準タグ ＋ Project Haystack** を既定（将来 ASHRAE 223P へ連携） |
 | v1.4 | **Raspberry Pi（ARM）でのネイティブ実行**を要求化（PR-NF-019/020）。Docker は配布手段の一つであり必須ではない。SBCO 原典リポジトリの URL を明記 |
+| v1.5 | 設計 grill (2026-06-07) の確定を反映: **device-mapping mode**（aggregated/multi-device/auto-partition, PR-F-091〜094, CON-8）、**BACnet タグの Brick 由来生成**（PR-F-017 改, AC-14 改）、**南向きアドレス local_id 第一**（PR-F-090 改）。SBCO 原典の事実補正（labels/scale/`&&`/point_type 意味論）。決定: ADR-009〜012、ADR-002/006/007/008 改訂 |
 
 ---
 
@@ -230,7 +231,7 @@ object type 自動推定（PR-F-005）の規定：
 | ID | 要求 | 優先度 | MVP | 原典 |
 |----|------|:---:|:---:|:---:|
 | PR-F-016 | 各 BACnet オブジェクトに `tags` プロパティ（name＋任意 value のタグ集合）を設け、ReadProperty/RPM で取得可能にする | S | 2 | 新 |
-| PR-F-017 | `tags` を SBCO `tags` 列から決定的に生成する | S | 2 | 5,新 |
+| PR-F-017 | BACnet セマンティックタグを **Brick クラス（device_type/point_type）から決定的に生成**する。SBCO `tags` 列はビル OS 検索タグとして metadata に保持（別概念。ADR-012） | S | 2 | 新 |
 | PR-F-018 | タグ語彙は BACnet 標準タグ ＋ Project Haystack を既定とする（将来 ASHRAE 223P へ連携）。未知タグは検証で警告し独自タグとして保持する | S | 2 | 新 |
 
 #### BACnet サービス（北向き）
@@ -275,9 +276,20 @@ object type 自動推定（PR-F-005）の規定：
 | PR-F-087 | gRPC 南向きバインディングを提供する（read / write / streaming） | S | 2 | 新 |
 | PR-F-088 | 北向き BACnet/IP を上位接続ゲートウェイ（Eclipse Hono 等）が取り込める形で提供する | M | 2 | 新 |
 | PR-F-089 | 上位経路上の Eclipse Ditto（デジタルツイン）連携を阻害しない（北向き BACnet 経由） | S | 2 | 19,新 |
-| PR-F-090 | 各南向きプロトコルのトピック/エンドポイント/サービス名を BACnet オブジェクトから一貫した規則で導出する | S | 2 | 18,新 |
+| PR-F-090 | 南向きアドレス（topic/endpoint/service）は **`local_id` を第一源**とし、明示 binding 設定 > `local_id` > building/device/point 導出 の順で決定する | S | 2 | 18,新 |
 
 > 南向き MQTT のトピック規則は要件定義書 18章を踏襲（`building/{building}/device/{device}/point/{point}/telemetry` を取込、`.../command` へ送出）。他プロトコルは同等の階層命名規則を適用する。
+
+#### 設備マッピング（Device Mapping — runtime mode と直交）
+
+| ID | 要求 | 優先度 | MVP | 原典 |
+|----|------|:---:|:---:|:---:|
+| PR-F-091 | device-mapping mode（aggregated / multi-device）を選択できる。runtime mode と直交 | M | 1/2 | 新 |
+| PR-F-092 | aggregated: 点リスト全体を 1 BACnet Device に集約（跨設備で instance を再採番） | M | 1 | 新 |
+| PR-F-093 | multi-device: SBCO device ごとに BACnet Device を生成（実設備忠実、instance_no_bacnet 尊重） | S | 2 | 新 |
+| PR-F-094 | auto-partition: object 数 > `limits.max_objects_per_device`（既定 1000）で Virtual Device に自動分割 | C | 3 | 新 |
+
+> 詳細は `../specs/device-mapping.md`・[[ADR-011]]。ペルソナ指針: Building OS 開発者→aggregated、Gateway 開発者→multi-device。
 
 #### 外部 API / UI
 
@@ -338,12 +350,13 @@ object type 自動推定（PR-F-005）の規定：
 | ID | 制約 |
 |----|------|
 | CON-1 | 入力ソースは SBCO 標準ポイントリストに限定する（他形式は中間で SBCO/YAML に正規化） |
-| CON-2 | 1 ランタイムインスタンス = 1 B-BC（Docker コンテナでもネイティブプロセスでも同様）。ゲートウェイモードも崩さない |
+| CON-2 | 1 ランタイムインスタンス = 1 Virtual B-BC（device-mapping mode に応じ 1..N の BACnet Device を公開。ADR-002/008/011）。ゲートウェイモードも崩さない |
 | CON-3 | `gateway_id` を `bbc_id` に流用しない |
 | CON-4 | BACnet 公開・サービス挙動は ANSI/ASHRAE 135 / ISO 16484-5 の範囲で実装する |
 | CON-5 | 既定の BACnet トランスポートは BACnet/IP（BACnet/SC は将来対象） |
 | CON-6 | 北向きは BACnet/IP に限定。上位系（Building OS）へは接続ゲートウェイ（Hono 等）経由を前提とし、上位プロトコルへの直接公開・直結を前提としない |
 | CON-7 | MQTT / ZeroMQ / Web of Things / gRPC はサウスバウンド（バインディング）として位置づけ、北向きには用いない |
+| CON-8 | `aggregated` device-mapping mode は Discovery 試験・Device 構成試験に使用しない（1 Device しか見えないため。これらは `multi-device` を使う。ADR-011） |
 
 ---
 
@@ -378,7 +391,7 @@ object type 自動推定（PR-F-005）の規定：
 | AC-11 | フォールトインジェクションが機能する | TS-11 | PR-F-031 |
 | AC-12 | Combined モードで内部生成と南向きバインドのオブジェクトを同一 BACnet/IP に同時公開できる | （新）TS-12 想定 | PR-F-080,081 |
 | AC-13 | ZeroMQ / WoT / gRPC の各南向きバインディングで取込・コマンド送出ができる | （新）TS-13 想定 | PR-F-085,086,087 |
-| AC-14 | オブジェクトの `tags` プロパティを ReadProperty で取得でき、内容が SBCO `tags` 列と一致する | （新）TS-14 想定 | PR-F-016,017 |
+| AC-14 | オブジェクトの `tags` プロパティを ReadProperty で取得でき、内容が **device_type/point_type の Brick クラスから導出**された語彙整合タグである。SBCO `tags` 列は `metadata.search_tags` に保持 | （新）TS-14 想定 | PR-F-016,017 / ADR-012 |
 
 ### 10.2 成功指標 (Success Metrics)
 
@@ -457,15 +470,23 @@ object type 自動推定（PR-F-005）の規定：
 | サウスバウンド | 本製品の下位インタフェース。MQTT/ZeroMQ/WoT/gRPC のバインディング（ゲートウェイモードの主） |
 | Simulator モード | SBCO から仮想 B-BC を生成し値を内部生成して北向き BACnet/IP に公開する動作 |
 | Gateway モード | 南向きプロトコルのデータ源を BACnet オブジェクト化し北向き BACnet/IP に公開する動作 |
-| Combined モード | Simulator と Gateway を同一インスタンスで併用する動作 |
+| Combined モード | Simulator と Gateway を同一インスタンスで併用する動作（runtime mode の値） |
+| Runtime mode | 値の出所を決める軸: simulator / gateway / combined（ADR-005） |
+| Virtual B-BC | 本製品が点リストから生成する仮想 B-BC。1 ランタイムインスタンス = 1 Virtual B-BC。device-mapping mode に応じ 1..N の BACnet Device を公開する |
+| Device-mapping mode | SBCO device → BACnet device の写像を決める軸（runtime mode と直交）: aggregated / multi-device（+auto-partition）（ADR-011） |
+| Aggregation（aggregated）モード | 点リスト全体を 1 BACnet Device に集約。ポイント網羅試験向け。Discovery 試験には使わない |
+| Multi-Device モード | SBCO device ごとに BACnet Device を生成（実設備忠実）。Discovery/Gateway 試験向け |
+| Auto-Partition | Device の object 数が上限超過時に複数 Virtual Device へ自動分割（RPM 性能対策） |
 | `gateway_id` | 上位ゲートウェイ識別子。`bbc_id` とは別概念 |
 | `bbc_id` | 仮想 B-BC の識別子。設定/環境変数で付与 |
 | YAML 中間モデル | 入力と各モードの間に置く正規化モデル（全モードで共有） |
 | Eclipse Hono | 上位接続ゲートウェイ。本製品の北向き BACnet を（BACnet コネクタ経由で）取り込み Building OS へ橋渡しする前提コンポーネント |
 | Eclipse Ditto | デジタルツイン層。デバイス状態を Thing として表現し上位連携する |
 | Web of Things (WoT) | W3C の Thing Description により Property/Action/Event を記述する相互運用フレームワーク。本製品では南向きの取込対象 |
-| セマンティックタグ（BACnet `tags`） | 各 BACnet オブジェクトに付与する name＋任意 value のタグ集合。ReadProperty で取得可能（135-2016 以降の任意プロパティ） |
-| Project Haystack | 設備・点のタギング規約（marker / name:value タグ）。本製品のタグ語彙の基盤の一つ |
+| セマンティックタグ（BACnet `tags`） | 各 BACnet オブジェクトに付与する name＋任意 value のタグ集合（135-2016 以降の任意プロパティ）。**Brick クラスから導出**（ADR-012）。ビル OS 検索タグとは別概念 |
+| SBCO 検索タグ | CSV `tags` 列の自由マーカー（`&&` 区切り・日本語可）。ビル OS 検索用。`metadata.search_tags` に保持し BACnet セマンティックタグには使わない |
+| Brick / RealEstateCore (REC) | SBCO データモデルの基盤オントロジ。device_type→`brick:Equipment` サブクラス、point→`brick:Point`。意味モデル出力（PR-F-073）の正 |
+| Project Haystack | 設備・点のタギング規約。BACnet 側タグ語彙の基盤。Brick クラスから Haystack タグを導出（ADR-012） |
 | ASHRAE 223P | セマンティックタグ／データモデリングの上位標準。Haystack・Brick と調和。将来連携対象 |
 | ZeroMQ | 軽量メッセージングライブラリ。南向きの低レイテンシなメッセージ配信に用いる |
 | gRPC | HTTP/2 上の RPC フレームワーク。南向きの read/write/streaming に用いる |

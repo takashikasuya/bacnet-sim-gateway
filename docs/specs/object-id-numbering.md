@@ -78,6 +78,14 @@ for ot in object_types:
 
 - ❓ バンド（例: AI=1〜、AV=10000〜）を採用するか要決定。採用時も §3.1 の決定性は維持する。
 
+### 3.3 device-mapping mode との関係 ✅（[[ADR-011]]）
+
+instance 採番空間は **(virtual) BACnet Device 単位**にスコープする。
+
+- **aggregated**: 全ポイントが 1 Device に集約されるため、跨設備で `instance_no_bacnet` が衝突しうる。この mode では **明示 `instance_no_bacnet` を採用せず §3.1 で再採番**する（元値は `metadata.instance_no_bacnet_src` に保持）。
+- **multi-device**: Device ごとに採番空間が独立。`instance_no_bacnet` を尊重（device 内一意）。
+- **auto-partition**: 分割後の各 Virtual Device に Device id を付与し、instance 空間を partition ごとに再スコープ（❓ 基底+オフセット規則は要確定）。
+
 ## 4. 決定性・冪等性 ✅
 
 - 同一入力（同一 SBCO ＋同一 CLI 引数）からは**常に同一の instance** を生成する。

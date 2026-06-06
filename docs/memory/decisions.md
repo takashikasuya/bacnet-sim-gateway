@@ -21,10 +21,13 @@ metadata:
 | ADR-006 | セマンティックタグ = BACnet `tags` ＋ Project Haystack | PRD v1.3 |
 | ADR-007 | object type をデータ型＋writable から自動推定（BACnet列優先） | 要件§6 |
 | ADR-008 | Raspberry Pi/ネイティブ実行をファーストクラス・Docker は任意（1 instance=1 B-BC） | PRD v1.4 |
+| ADR-009 | BACnet ライブラリは bacpypes3 に一本化（server/client 両用、asyncio） | decisions.md |
+| ADR-010 | ランタイムは single-loop asyncio。Core Object Model は event-loop 閉じ込め・no blocking | decisions.md |
+| ADR-011 | device-mapping mode（aggregated/multi-device/auto-partition）。runtime mode と直交。1 instance=1 Virtual B-BC（1..N BACnet Device 公開） | SBCO pointlist |
+| ADR-012 | device_type=Brick クラス採用。BACnet セマンティックタグは Brick から導出。SBCO tags 列はビルOS検索タグで別物 | SBCO schema |
 
 ## Pending Decisions
 
-- BACnet ライブラリ選定（bacpypes3 が有力。BAC0 は高レベルだが B-BC サーバ実装の柔軟性を要確認）→ 未 ADR
 - 南向きバインディングの内部モデル抽象（プロトコル非依存層の API 形）→ MVP-2 着手時に ADR 化
 
 ### 下流設計書 v0.1 が surface した未決事項（❓）

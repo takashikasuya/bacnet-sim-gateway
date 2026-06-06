@@ -52,10 +52,10 @@ objects:
 
 要件定義書 §18 のトピック規則を踏襲（**南向きとして**）。
 
-| 方向 | 動作 | トピック（既定） |
+| 方向 | 動作 | トピック源（§6 の優先順） |
 |------|------|------------------|
-| telemetry | subscribe | `building/{building}/device/{device}/point/{point}/telemetry` |
-| command | publish | `building/{building}/device/{device}/point/{point}/command` |
+| telemetry | subscribe | `local_id`（既定）/ 明示設定 / 導出 `building/{building}/device/{device}/point/{point}/telemetry` |
+| command | publish | `local_id`（既定）/ 明示設定 / 導出 `.../command` |
 
 ペイロード（JSON 既定）
 ```json
@@ -109,10 +109,16 @@ message PointValue { string point_id = 1; double real = 2; bool boolean = 3;
 - ❓ 本製品が gRPC クライアント（南へ接続）か、サーバ（南が接続）か。現案はクライアント＋streaming subscribe。
 - ❓ TLS / 認証。
 
-## 6. 命名規則の一貫性 ✅（PR-F-090）
+## 6. 南向きアドレスの決定（local_id 第一）✅（PR-F-090）
 
-- トピック/エンドポイント/サービス名は BACnet オブジェクトのメタ（building/device/point）から決定的に導出。
-- 既定テンプレートは MQTT 規則（§2）を基準に各プロトコルへ写像。テンプレートは設定で上書き可。
+南向きアドレス（MQTT topic / ZeroMQ topic / gRPC point ref / WoT affordance）の優先順位:
+
+1. **明示 binding 設定**（`binding.telemetry.topic` 等）があればそれ。
+2. 無ければ **SBCO `local_id`**（原典で「BACnet の ObjectID / MQTT の TOPIC」＝設備側アドレスそのもの）。南向きプロトコルに応じて解釈。
+3. それも無ければ building/device/point から決定的に**導出**（fallback）。
+
+- Simulator モードでは `local_id` は **metadata のみ**（北の ObjectID は採番 [[ADR-011]] で決まり、local_id とは別物）。
+- 南向きは MQTT/ZeroMQ/WoT/gRPC（CON-7）。原典の「local_id=BACnet ObjectID」は実設備が BACnet の場合の話で、本製品の南向き対象外。
 
 ## 7. 品質・異常系の連動 ✅
 - staleness 超過時に `on_stale` に従い `outOfService=true` または `statusFlags.fault` を設定（フォールトインジェクション PR-F-031 と整合）。

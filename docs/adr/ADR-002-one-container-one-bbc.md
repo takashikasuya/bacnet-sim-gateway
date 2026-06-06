@@ -1,8 +1,10 @@
 # ADR-002: 1 Docker Container = 1 B-BC
 
 - **Date:** 2026-06-06
-- **Status:** Accepted
+- **Status:** Accepted（カーディナリティは [[ADR-011]] で改訂）
 - **原典:** 要件定義書 §4, §13, §22-2 / PRD CON-2
+
+> **改訂 ([[ADR-011]]):** 「1 instance = 1 B-BC」は維持するが、1 Virtual B-BC は device-mapping mode に応じ **1..N 個の BACnet Device** を公開しうる（aggregated=1, multi-device=N）。本 ADR の独立性の論拠は BACnet Device レベルで成立する。
 
 ## Context
 

@@ -7,7 +7,7 @@ metadata:
 
 # Architecture
 
-> 詳細は PRD v1.4 §4（`../backlog/PRD-v1.4.md`）と要件定義書 §3,§4（`../specs/requirements-definition-v1.1.md`）。
+> 詳細は PRD v1.5 §4（`../backlog/PRD-v1.5.md`）と要件定義書 §3,§4（`../specs/requirements-definition-v1.1.md`）。
 
 ## 連携方向（最重要）
 
@@ -30,6 +30,10 @@ metadata:
 | Combined | 内部生成＋南向き混在 | BACnet/IP | 一部 |
 
 全モードが **YAML 由来の単一オブジェクトモデルを共有**（[[ADR-004]]）。
+
+## 並行性モデル
+
+**single-loop asyncio**（[[ADR-010]]）。BACnet スタック・シミュレーション・シナリオ・南向きアダプタは全て async タスク。Core Object Model（`presentValue` 等の共有状態）は **event loop に閉じ込め**、他スレッドから直接変更しない。blocking 禁止。sync-only SDK は `run_in_executor`＋`asyncio.Queue` 境界で隔離（例外扱い）。
 
 ## パイプライン
 
@@ -65,18 +69,19 @@ SBCO Point List (CSV/XLSX) → YAML Generator → simulator.yaml → B-BC Runtim
 
 - SBCO 標準ポイントリスト: https://github.com/smartbuilding-co-creation-organization/smartbuilding_datamodel_builder
 - 列定義はこのリポジトリに追従（[[ADR-001]]）。詳細は [[sbco-datamodel-builder-repo]]。
+- SBCO オントロジ（`schema/building_model.*`）は **Brick + RealEstateCore (REC) ベース**（device=`brick:Equipment`、point=`brick:Point`、Haystack 参照なし）。device_type は Brick クラス採用、BACnet セマンティックタグは Brick から導出（[[ADR-012]]）。
 
 ## Technology Stack
 
 - Language: Python 3.12 / uv
-- BACnet library: TBD（bacpypes3 が有力。ARM 動作要確認。decisions.md 参照）
+- BACnet library: **bacpypes3**（server/client 両用、asyncio。[[ADR-009]]。ARM 実動作は MVP-1 で確認）
 - 南向き: MQTT（Mosquitto/EMQX）, ZeroMQ, WoT, gRPC
 - Config: YAML
 - 配布: ネイティブ（uv, Raspberry Pi）＋ Docker（任意）
 
 ## Open Questions
 
-- [ ] BACnet ライブラリ（bacpypes3 vs BAC0、ARM 動作）— decisions.md 参照
+- [x] BACnet ライブラリ → bacpypes3（[[ADR-009]]）。残: ARM 実動作確認（MVP-1）
 - [ ] 南向き内部モデルの抽象 API（MVP-2）
 - [ ] instance_no 自動採番ルール
 - [ ] サポート対象 OS/アーキと Python 配布形態（要件§13.1）

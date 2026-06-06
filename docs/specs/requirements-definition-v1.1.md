@@ -1,7 +1,7 @@
 # SBCO BACnet B-BC Simulator 要件定義書 v1.1
 
 > **位置づけ**: 本書は実装方式・データ構造・CLI 仕様・試験シナリオの **設計 (Specification) の正** とする。
-> 上位の製品要求は `../backlog/PRD-v1.4.md` を参照。設計判断の根拠は `../adr/` を参照。
+> 上位の製品要求は `../backlog/PRD-v1.5.md` を参照。設計判断の根拠は `../adr/` を参照。
 
 ---
 
@@ -146,7 +146,8 @@ floor, installation_area, local_id
 **任意列**
 
 ```
-interval, unit, min_pres_value, max_pres_value, tags, description, panel
+interval, unit, max_pres_value, min_pres_value, labels, scale,
+target_area, panel, tags, supplier, owner, description
 ```
 
 **BACnet列**（存在する場合は優先利用する）
@@ -154,6 +155,17 @@ interval, unit, min_pres_value, max_pres_value, tags, description, panel
 ```
 device_id_bacnet, instance_no_bacnet, object_type_bacnet
 ```
+
+> **原典の列セマンティクス**（pointlist.md より。重要差分）:
+> - `point_type` は **意味的プロファイル名**（例: 温度, 湿度, CO2濃度, 空調制御）であり **データ型(float/bool/enum)ではない**。テレメトリ形式のテンプレート参照。
+> - `point_specification` の値域 = **Alarm / Command / Setpoint / Measurement / Metering / Status**（英語推奨）。
+> - `labels`: **multi-state/binary の状態ラベル**。`&&` 区切り（例 `開&&閉`）。CSV のためカンマ不可で `&&` を採用。
+> - `tags`: 検索用タグ。`&&` 区切り。語彙指定なし（Haystack は参考）。
+> - `scale`: Present Value への倍率/重み（offset は無い）。
+> - `local_id`: **設備側ポイント識別子＝BACnet の ObjectID / MQTT の TOPIC**（＝南向きアドレス）。
+> - `object_type_bacnet`: 表記は `Analog-Input` / `Binary-Output` 等（ハイフン）。YAML の `analogInput` 等へ正規化する。
+> - `device_id` が同一のポイントは 1 デバイスに統合される。
+> - 原典: https://github.com/smartbuilding-co-creation-organization/smartbuilding_datamodel_builder （`pointlist.md`, `sample/debug-sample.csv`）
 
 ---
 

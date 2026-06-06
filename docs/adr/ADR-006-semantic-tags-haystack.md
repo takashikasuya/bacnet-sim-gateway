@@ -11,9 +11,11 @@
 ## Decision
 
 - 各 BACnet オブジェクトに **`tags` プロパティ** を設け、ReadProperty/RPM で取得可能にする。
-- `tags` は SBCO `tags` 列から **決定的に** 生成する。
 - タグ語彙は **BACnet 標準タグ ＋ Project Haystack** を既定とし、将来 ASHRAE 223P へ連携する。
-- 未知タグは検証で警告し、独自タグとして保持する。
+- **生成源は Brick クラス（device_type/point_type）**（[[ADR-012]] で改訂）。~~SBCO `tags` 列から生成~~ ではない。SBCO `tags` 列はビル OS 検索タグとして metadata に保持する別概念。
+- 生成が Brick 由来のため出力は語彙整合的。手書きタグ等で語彙外が現れた場合のみ検証で警告し独自タグとして保持。
+
+> **改訂 2026-06-07 ([[ADR-012]]):** 生成源を「SBCO `tags` 列」→「Brick クラス由来」に変更。語彙ポリシー（BACnet標準＋Haystack）は不変。
 
 ## Consequences
 

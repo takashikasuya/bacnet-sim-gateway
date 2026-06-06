@@ -9,6 +9,7 @@ SBCO ポイントリストから仮想 B-BC を生成し、BACnet/IP（北向き
 ## Acceptance Criteria（対応 AC / 要求）
 
 - [ ] SBCO CSV → YAML 生成（AC-1 / PR-F-001,004）
+- [ ] **device-mapping = aggregated**: 点リスト全体を 1 Virtual B-BC（1 BACnet Device）に集約・instance 再採番（PR-F-091,092 / [[ADR-011]]）。multi-device/auto-partition は MVP-2/3
 - [ ] 必須列検証・`gateway_id`≠`bbc_id` 担保（PR-F-002,003）
 - [ ] object type 自動推定＋BACnet 列優先（PR-F-005,006 / [[ADR-007]]）
 - [ ] Device + Analog/Binary/Multi-state オブジェクトと必須プロパティ（PR-F-012〜014）

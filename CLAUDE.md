@@ -27,11 +27,11 @@ Vision → Memory → ADR → Backlog → Spec → Issue
 | Vision | `docs/vision/vision.md` | なぜ作るか | — |
 | Memory | `docs/memory/` | 知っておくべきこと（architecture, decisions index, pitfalls, BACnet domain） | — |
 | ADR | `docs/adr/ADR-001..008` | なぜその設計か | **設計判断の正** |
-| Backlog | `docs/backlog/` | 何を作るか（`PRD-v1.4.md` ＝製品要求、`epic/EP-001..006` ＝ MVP 別） | **製品要求の正** |
+| Backlog | `docs/backlog/` | 何を作るか（`PRD-v1.5.md` ＝製品要求、`epic/EP-001..006` ＝ MVP 別） | **製品要求の正** |
 | Spec | `docs/specs/` | どう振る舞うか | **設計の正** |
 
 Two source documents are the detailed sources of truth; the layer files navigate to them without duplicating:
-- `docs/backlog/PRD-v1.4.md` — product requirements (PR-F-*, PR-NF-*, AC-*, MVP phases)
+- `docs/backlog/PRD-v1.5.md` — product requirements (PR-F-*, PR-NF-*, AC-*, MVP phases)
 - `docs/specs/requirements-definition-v1.1.md` — behavior/CLI/data spec. The 7 downstream design docs in `docs/specs/` (numbering, mapping, southbound-binding, operating-modes, pics-bibbs, service-priority, compose) are **v0.1 drafts** carrying status markers: ✅ confirmed / 🔧 tentative / ❓ undecided. Open ❓ items are aggregated in `docs/memory/decisions.md` — check there before deciding anything that looks open.
 
 Requirement IDs (`PR-F-005`), acceptance IDs (`AC-6`), test scenarios (`TS-01`), and ADRs (`ADR-005`) are the cross-referencing vocabulary used throughout. When breaking an epic into issues, cite these in `.github/ISSUE_TEMPLATE/feature.md`.

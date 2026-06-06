@@ -9,7 +9,9 @@
 | 関連要求 | PR-F-080, PR-F-081, PR-F-063 / PR-NF-014, PR-NF-016 |
 | 原則 | 北向きは常に BACnet/IP。南向きはバインディング（主）。全モードで同一オブジェクトモデルを共有 |
 
-## 1. モード定義 ✅
+> **2 つの "mode" 軸を混同しないこと。** 本書は **runtime mode**（値の出所: simulator/gateway/combined）を定義する。SBCO device → BACnet device の写像を決める **device-mapping mode**（aggregated/multi-device）は別軸で `device-mapping.md`（[[ADR-011]]）。両者は直交する。
+
+## 1. モード定義（runtime mode）✅
 
 | モード | BACnet 値の出所 | 北向き | 南向き |
 |--------|-----------------|--------|--------|
@@ -18,6 +20,8 @@
 | combined | オブジェクト単位で内部生成 or 南向き | BACnet/IP | 一部 binding |
 
 ## 2. レイヤ責務分離 ✅
+
+> 並行性は **single-loop asyncio**（[[ADR-010]]）。下図の全レイヤは同一 event loop 上の async タスクで、Core Object Model は event loop に閉じ込める。
 
 ```
 ┌───────────────── Northbound Adapter (BACnet/IP) ─────────────────┐
