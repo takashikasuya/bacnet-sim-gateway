@@ -45,6 +45,26 @@ def test_validate_point_list_missing_column(tmp_path):
     assert "gateway_id" in result.output
 
 
+def test_generate_yaml_fails_on_invalid_config(tmp_path):
+    # An explicit Multi-state-Value with no labels yields an invalid config
+    # (missing state_text) -> generate-yaml must exit non-zero and not write.
+    header = (
+        "gateway_id,device_id,device_name,device_type,site,building,floor,"
+        "installation_area,target_area,panel,point_type,point_specification,point_id,"
+        "point_name,writable,interval,unit,max_pres_value,min_pres_value,labels,scale,"
+        "tags,supplier,owner,description,local_id,device_id_bacnet,instance_no_bacnet,"
+        "object_type_bacnet"
+    )
+    row = ("GW1,D1,d,t,s,b,1F,a,a,,HVAC Control,Command,PT1,Mode,true,0,,,,,1.0,,,,,"
+           "L1,BAC1,1,Multi-state-Value")
+    csv = tmp_path / "bad.csv"
+    csv.write_text(header + "\n" + row + "\n", encoding="utf-8")
+    out = tmp_path / "sim.yaml"
+    result = runner.invoke(app, ["generate-yaml", "-i", str(csv), "-o", str(out)])
+    assert result.exit_code == 1
+    assert not out.exists()
+
+
 def test_generate_yaml_output_is_self_validated(sample_pointlist, tmp_path):
     # generate-yaml validates its own output; a clean list yields a valid file.
     out = tmp_path / "simulator.yaml"

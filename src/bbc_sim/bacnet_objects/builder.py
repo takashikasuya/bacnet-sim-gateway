@@ -49,7 +49,8 @@ _CLASSES: dict[BacnetObjectType, type] = {
     BacnetObjectType.multiStateValue: MultiStateValueObject,
 }
 
-# bacpypes3 ObjectIdentifier uses dash-style object-type tokens.
+# Object-type tokens passed to bacpypes3 ObjectIdentifier (camelCase, as accepted by
+# bacpypes3; note that str(objectIdentifier[0]) renders the dash-style form).
 _OID_TYPE: dict[BacnetObjectType, str] = {
     BacnetObjectType.analogInput: "analogInput",
     BacnetObjectType.analogOutput: "analogOutput",
@@ -85,6 +86,7 @@ def build_object(spec: BacnetObjectSpec) -> Object:
     if spec.object_type.is_analog:
         kwargs["presentValue"] = float(spec.present_value or 0.0)
         kwargs["units"] = spec.units or "noUnits"
+        kwargs["resolution"] = 0.1  # required Analog property (§10)
         if spec.min_pres_value is not None:
             kwargs["minPresValue"] = float(spec.min_pres_value)
         if spec.max_pres_value is not None:
