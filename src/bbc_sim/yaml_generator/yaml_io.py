@@ -1,0 +1,170 @@
+"""Serialize/deserialize and validate the simulator.yaml intermediate model.
+
+simulator.yaml is the single intermediate shared by all modes (ADR-004). The schema
+follows requirements §14.
+"""
+
+from __future__ import annotations
+
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from bbc_sim.models import (
+    BacnetObjectSpec,
+    BacnetObjectType,
+    BbcConfig,
+    NetworkConfig,
+    SimulatorConfig,
+    UpdateConfig,
+)
+
+
+def _object_to_dict(o: BacnetObjectSpec) -> dict[str, Any]:
+    d: dict[str, Any] = {
+        "point_id": o.point_id,
+        "object_type": o.object_type.value,
+        "object_instance": o.object_instance,
+        "object_name": o.object_name,
+        "present_value": o.present_value,
+        "writable": o.writable,
+        "scale": o.scale,
+    }
+    if o.units is not None:
+        d["units"] = o.units
+    if o.min_pres_value is not None:
+        d["min_pres_value"] = o.min_pres_value
+    if o.max_pres_value is not None:
+        d["max_pres_value"] = o.max_pres_value
+    if o.state_text:
+        d["state_text"] = o.state_text
+    if o.active_text is not None:
+        d["active_text"] = o.active_text
+    if o.inactive_text is not None:
+        d["inactive_text"] = o.inactive_text
+    if o.description:
+        d["description"] = o.description
+    if o.update.interval is not None or o.update.mode is not None:
+        upd: dict[str, Any] = {}
+        if o.update.interval is not None:
+            upd["interval"] = o.update.interval
+        if o.update.mode is not None:
+            upd["mode"] = o.update.mode
+        d["update"] = upd
+    if o.metadata:
+        d["metadata"] = o.metadata
+    return d
+
+
+def config_to_dict(config: SimulatorConfig) -> dict[str, Any]:
+    return {
+        "bbc": {
+            "bbc_id": config.bbc.bbc_id,
+            "device_id": config.bbc.device_id,
+            "object_name": config.bbc.object_name,
+            "vendor_name": config.bbc.vendor_name,
+            "vendor_identifier": config.bbc.vendor_identifier,
+            "model_name": config.bbc.model_name,
+        },
+        "network": {
+            "type": config.network.type,
+            "bind_address": config.network.bind_address,
+            "port": config.network.port,
+        },
+        "objects": [_object_to_dict(o) for o in config.objects],
+    }
+
+
+def dump_config(config: SimulatorConfig, path: str | Path) -> None:
+    Path(path).write_text(
+        yaml.safe_dump(config_to_dict(config), allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
+def _coerce_bool(value: Any) -> bool:
+    """Interpret YAML/JSON truthiness, including quoted strings like 'false'/'no'."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y", "on")
+    return bool(value)
+
+
+def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
+    upd = d.get("update") or {}
+    return BacnetObjectSpec(
+        point_id=d["point_id"],
+        object_type=BacnetObjectType(d["object_type"]),
+        object_instance=int(d["object_instance"]),
+        object_name=d["object_name"],
+        present_value=d.get("present_value"),
+        units=d.get("units"),
+        min_pres_value=d.get("min_pres_value"),
+        max_pres_value=d.get("max_pres_value"),
+        state_text=list(d.get("state_text", [])),
+        active_text=d.get("active_text"),
+        inactive_text=d.get("inactive_text"),
+        scale=float(d.get("scale", 1.0)),
+        writable=_coerce_bool(d.get("writable", False)),
+        description=d.get("description", ""),
+        update=UpdateConfig(interval=upd.get("interval"), mode=upd.get("mode")),
+        metadata=dict(d.get("metadata", {})),
+    )
+
+
+def dict_to_config(d: dict[str, Any]) -> SimulatorConfig:
+    bbc = d["bbc"]
+    net = d.get("network", {})
+    return SimulatorConfig(
+        bbc=BbcConfig(
+            bbc_id=bbc["bbc_id"],
+            device_id=int(bbc["device_id"]),
+            object_name=bbc.get("object_name", "Local Virtual B-BC"),
+            vendor_name=bbc.get("vendor_name", "SBCO Simulator"),
+            vendor_identifier=int(bbc.get("vendor_identifier", 999)),
+            model_name=bbc.get("model_name", "Virtual BBC"),
+        ),
+        network=NetworkConfig(
+            type=net.get("type", "bacnet-ip"),
+            bind_address=net.get("bind_address", "0.0.0.0"),
+            port=int(net.get("port", 47808)),
+        ),
+        objects=[_object_from_dict(o) for o in d.get("objects", [])],
+    )
+
+
+def load_config(path: str | Path) -> SimulatorConfig:
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return dict_to_config(data)
+
+
+def validate_config(config: SimulatorConfig) -> list[str]:
+    """Validate a SimulatorConfig; returns human-readable errors (empty == valid)."""
+    errors: list[str] = []
+    if config.bbc.device_id <= 0:
+        errors.append("bbc.device_id must be positive")
+
+    seen_instances: dict[BacnetObjectType, set[int]] = defaultdict(set)
+    seen_points: set[str] = set()
+    for o in config.objects:
+        if o.point_id in seen_points:
+            errors.append(f"duplicate point_id: {o.point_id}")
+        seen_points.add(o.point_id)
+        s = seen_instances[o.object_type]
+        if o.object_instance in s:
+            errors.append(
+                f"duplicate object instance {o.object_type.value}:{o.object_instance}"
+            )
+        s.add(o.object_instance)
+        if o.object_type.is_multistate and not o.state_text:
+            errors.append(f"{o.point_id}: multi-state object missing state_text")
+    return errors
+
+
+def validate_yaml(path: str | Path) -> list[str]:
+    try:
+        config = load_config(path)
+    except (KeyError, ValueError, TypeError, AttributeError, yaml.YAMLError) as exc:
+        return [f"invalid simulator.yaml: {exc}"]
+    return validate_config(config)

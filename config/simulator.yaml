@@ -1,0 +1,188 @@
+bbc:
+  bbc_id: bbc-local-001
+  device_id: 1001
+  object_name: Local Virtual B-BC
+  vendor_name: SBCO Simulator
+  vendor_identifier: 999
+  model_name: Virtual BBC
+network:
+  type: bacnet-ip
+  bind_address: 0.0.0.0
+  port: 47808
+objects:
+- point_id: PT001
+  object_type: analogInput
+  object_instance: 1001
+  object_name: Supply Air Temperature
+  present_value: 0.0
+  writable: false
+  scale: 1.0
+  units: degreesCelsius
+  min_pres_value: -10.0
+  max_pres_value: 50.0
+  description: Supply air temperature
+  update:
+    interval: 60
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL001
+- point_id: PT002
+  object_type: analogInput
+  object_instance: 1
+  object_name: Return Humidity
+  present_value: 0.0
+  writable: false
+  scale: 1.0
+  units: percentRelativeHumidity
+  min_pres_value: 0.0
+  max_pres_value: 100.0
+  description: Return air humidity
+  update:
+    interval: 60
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL002
+- point_id: PT003
+  object_type: binaryInput
+  object_instance: 1
+  object_name: Occupancy
+  present_value: false
+  writable: false
+  scale: 1.0
+  active_text: Occupied
+  inactive_text: Vacant
+  description: Occupancy sensor
+  update:
+    interval: 10
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL003
+- point_id: PT004
+  object_type: binaryOutput
+  object_instance: 2001
+  object_name: Damper Command
+  present_value: false
+  writable: true
+  scale: 1.0
+  active_text: Open
+  inactive_text: Closed
+  description: Damper open/close command
+  update:
+    interval: 0
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL004
+- point_id: PT005
+  object_type: multiStateInput
+  object_instance: 1
+  object_name: Fan Speed
+  present_value: 1
+  writable: false
+  scale: 1.0
+  state_text:
+  - Low
+  - Medium
+  - High
+  description: Fan speed state
+  update:
+    interval: 30
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL005
+- point_id: PT006
+  object_type: analogValue
+  object_instance: 1002
+  object_name: Temperature Setpoint
+  present_value: 10.0
+  writable: true
+  scale: 1.0
+  units: degreesCelsius
+  min_pres_value: 10.0
+  max_pres_value: 40.0
+  description: Zone temperature setpoint
+  update:
+    interval: 0
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL006
+- point_id: PT007
+  object_type: multiStateValue
+  object_instance: 3001
+  object_name: Operation Mode
+  present_value: 1
+  writable: true
+  scale: 1.0
+  state_text:
+  - Auto
+  - Manual
+  - 'Off'
+  description: Operation mode select
+  update:
+    interval: 0
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL007
+- point_id: PT008
+  object_type: analogInput
+  object_instance: 1003
+  object_name: CO2 Level
+  present_value: 0.0
+  writable: false
+  scale: 1.0
+  units: partsPerMillion
+  min_pres_value: 0.0
+  max_pres_value: 2000.0
+  description: CO2 concentration
+  update:
+    interval: 60
+  metadata:
+    gateway_id: GW001
+    device_id: DEV001
+    device_name: AHU 01
+    device_type: AirHandlingUnit
+    building: MainBldg
+    floor: 3F
+    installation_area: Room101
+    local_id: LOCAL008
