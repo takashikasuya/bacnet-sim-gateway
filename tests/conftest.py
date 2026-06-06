@@ -21,3 +21,9 @@ def free_udp_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
+
+
+@pytest.fixture
+def free_port():
+    """Return the free_udp_port helper (callable) for tests needing several ports."""
+    return free_udp_port
