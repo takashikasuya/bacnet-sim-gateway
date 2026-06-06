@@ -76,6 +76,21 @@ def test_multistate_state_text_from_labels(config):
     assert pt005.state_text == ["Low", "Medium", "High"]
 
 
+def test_update_params_survive_yaml_roundtrip(config, tmp_path):
+    from bbc_sim.models import UpdateConfig
+    from bbc_sim.yaml_generator.yaml_io import dump_config, load_config
+
+    config.objects[0].update = UpdateConfig(
+        interval=5, mode="scenario", params={"setpoints": [[0, 10.0], [3, 25.0]]}
+    )
+    path = tmp_path / "sim.yaml"
+    dump_config(config, path)
+    loaded = load_config(path)
+    o = loaded.objects[0]
+    assert o.update.mode == "scenario"
+    assert o.update.params["setpoints"] == [[0, 10.0], [3, 25.0]]
+
+
 def test_yaml_roundtrip(config, tmp_path):
     path = tmp_path / "simulator.yaml"
     dump_config(config, path)

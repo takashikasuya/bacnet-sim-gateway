@@ -111,39 +111,27 @@ async def run_async(
     config: SimulatorConfig,
     stop: asyncio.Event | None = None,
     transport_uri: str | None = None,
+    rest_port: int | None = None,
 ) -> None:
-    """Run the B-BC until ``stop`` is set (or forever).
+    """Run the full B-BC (server + engine + bindings + optional REST) until stopped."""
+    from bbc_sim.simulator_runtime.runtime import Runtime
 
-    In gateway/combined mode (or whenever objects carry bindings) a southbound
-    transport is started from ``transport_uri``.
-    """
-    from bbc_sim.models import RuntimeMode
-
-    app = build_application(config)
-    manager = None
-    needs_southbound = config.mode is not RuntimeMode.simulator and any(
-        o.binding for o in config.objects
-    )
-    if needs_southbound and transport_uri:
-        from bbc_sim.southbound.binding import SouthboundManager
-        from bbc_sim.southbound.factory import make_transport
-
-        manager = SouthboundManager(app, config, make_transport(transport_uri))
-        await manager.start()
-
-    stop = stop or asyncio.Event()
-    try:
-        await stop.wait()
-    finally:
-        if manager is not None:
-            await manager.stop()
-        app.close()
+    runtime = Runtime(config, transport_uri=transport_uri, rest_port=rest_port)
+    await runtime.run_forever(stop)
 
 
-def run(config: SimulatorConfig, transport_uri: str | None = None) -> None:
+def run(
+    config: SimulatorConfig,
+    transport_uri: str | None = None,
+    rest_port: int | None = None,
+) -> None:
     """Blocking entry point for the CLI."""
-    asyncio.run(run_async(config, transport_uri=transport_uri))
+    asyncio.run(run_async(config, transport_uri=transport_uri, rest_port=rest_port))
 
 
-def run_from_path(config_path: str | Path, transport_uri: str | None = None) -> None:
-    run(load_config(config_path), transport_uri=transport_uri)
+def run_from_path(
+    config_path: str | Path,
+    transport_uri: str | None = None,
+    rest_port: int | None = None,
+) -> None:
+    run(load_config(config_path), transport_uri=transport_uri, rest_port=rest_port)

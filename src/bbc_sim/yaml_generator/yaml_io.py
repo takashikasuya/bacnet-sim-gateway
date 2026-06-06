@@ -50,12 +50,14 @@ def _object_to_dict(o: BacnetObjectSpec) -> dict[str, Any]:
         d["inactive_text"] = o.inactive_text
     if o.description:
         d["description"] = o.description
-    if o.update.interval is not None or o.update.mode is not None:
+    if o.update.interval is not None or o.update.mode is not None or o.update.params:
         upd: dict[str, Any] = {}
         if o.update.interval is not None:
             upd["interval"] = o.update.interval
         if o.update.mode is not None:
             upd["mode"] = o.update.mode
+        if o.update.params:
+            upd["params"] = o.update.params
         d["update"] = upd
     if o.metadata:
         d["metadata"] = o.metadata
@@ -139,7 +141,11 @@ def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
         scale=float(d.get("scale", 1.0)),
         writable=bool(d.get("writable", False)),
         description=d.get("description", ""),
-        update=UpdateConfig(interval=upd.get("interval"), mode=upd.get("mode")),
+        update=UpdateConfig(
+            interval=upd.get("interval"),
+            mode=upd.get("mode"),
+            params=dict(upd.get("params", {})),
+        ),
         metadata=dict(d.get("metadata", {})),
         binding=_binding_from_dict(d.get("binding")),
     )

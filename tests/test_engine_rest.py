@@ -77,3 +77,37 @@ def test_rest_scenario_injects_fault(served):
     # unknown fault rejected
     bad = client.post("/simulation/scenario", json={"point_id": "PT001", "fault": "nope"})
     assert bad.status_code == 400
+
+
+async def test_runtime_wires_engine_and_rest(sample_pointlist, free_port):
+    # Integration: `Runtime` (used by `bbc-sim run`) must drive simulated values and
+    # serve the REST control plane (addresses the "orphaned features" review finding).
+    import httpx
+    from bacpypes3.primitivedata import ObjectIdentifier
+
+    from bbc_sim.models import RuntimeMode, UpdateConfig
+    from bbc_sim.simulator_runtime.runtime import Runtime
+
+    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1001)
+    cfg.mode = RuntimeMode.simulator
+    cfg.network.bind_address = "127.0.0.1"
+    cfg.network.port = free_port()
+    ai = next(o for o in cfg.objects if o.point_id == "PT001")
+    ai.update = UpdateConfig(interval=1, mode="sinusoidal", params={"period": 1.0})
+    rest_port = free_port()
+
+    runtime = Runtime(cfg, rest_port=rest_port, tick_seconds=0.05)
+    assert runtime.engine is not None  # engine wired for simulator mode w/ generators
+    await runtime.start()
+    try:
+        import asyncio
+
+        await asyncio.sleep(0.4)
+        oid = ObjectIdentifier(("analogInput", ai.object_instance))
+        assert float(runtime.app.get_object_id(oid).presentValue) != 0.0  # driven
+        async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{rest_port}") as c:
+            resp = await c.get("/objects")
+            assert resp.status_code == 200
+            assert len(resp.json()) == 8
+    finally:
+        await runtime.stop()

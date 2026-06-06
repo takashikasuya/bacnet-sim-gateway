@@ -12,6 +12,7 @@ dependencies = [
     "paho-mqtt>=2.0",
     "pyzmq>=26.0",
     "fastapi>=0.110",
+    "uvicorn>=0.30",
 ]
 
 [project.scripts]
