@@ -8,6 +8,7 @@ no blocking calls.
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,8 @@ from bacpypes3.errors import ExecutionError
 from bbc_sim.bacnet_objects.builder import build_object_list
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.yaml_generator.yaml_io import load_config
+
+_log = logging.getLogger(__name__)
 
 _PRESENT_VALUE = {"present-value", "presentValue"}
 
@@ -77,9 +80,13 @@ async def run_async(
 
     app = build_application(config)
     manager = None
-    needs_southbound = config.mode is not RuntimeMode.simulator and any(
-        o.binding for o in config.objects
-    )
+    has_bindings = any(o.binding for o in config.objects)
+    needs_southbound = config.mode is not RuntimeMode.simulator and has_bindings
+    if needs_southbound and not transport_uri:
+        _log.warning(
+            "mode=%s with bound object(s) but no --transport; southbound bindings are "
+            "inactive (use memory:// for an in-process fake)", config.mode.value,
+        )
     if needs_southbound and transport_uri:
         from bbc_sim.southbound.binding import SouthboundManager
         from bbc_sim.southbound.factory import make_transport

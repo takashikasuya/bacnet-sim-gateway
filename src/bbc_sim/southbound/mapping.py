@@ -59,5 +59,9 @@ def present_value_to_command(spec: BacnetObjectSpec, present_value: Any) -> byte
     elif spec.object_type.is_multistate or m.type in ("unsigned", "enum"):
         value = int(present_value)
     else:
-        value = (float(present_value) - m.offset) / m.scale if m.scale else 0.0
+        if not m.scale:
+            raise ValueError(
+                f"{spec.point_id}: command mapping scale must be non-zero"
+            )
+        value = (float(present_value) - m.offset) / m.scale
     return json.dumps({"value": value}).encode("utf-8")
