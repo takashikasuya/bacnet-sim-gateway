@@ -25,7 +25,13 @@ from bbc_sim.yaml_generator.units import to_bacnet_units
 
 def _default_present_value(ot: BacnetObjectType, point: SbcoPoint) -> float | int | bool:
     if ot.is_analog:
-        return float(point.min_pres_value) if point.min_pres_value is not None else 0.0
+        # Start at 0.0, clamped into [min, max] when those bounds exclude it.
+        value = 0.0
+        if point.min_pres_value is not None and value < point.min_pres_value:
+            value = float(point.min_pres_value)
+        if point.max_pres_value is not None and value > point.max_pres_value:
+            value = float(point.max_pres_value)
+        return value
     if ot.is_binary:
         return False
     return 1  # multi-state: states are 1-based
