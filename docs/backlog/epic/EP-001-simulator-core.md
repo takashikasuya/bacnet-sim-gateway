@@ -16,8 +16,9 @@ SBCO ポイントリストから仮想 B-BC を生成し、BACnet/IP（北向き
 - [ ] Dynamic Device/Object Binding（PR-F-024）
 - [ ] 同一サブネット探索（PR-F-040）
 - [ ] CLI: generate-yaml / validate / run / whois / read-property / rpm / write-property / list-objects / validate-point-list（PR-F-060〜062）
-- [ ] Docker `docker compose up` 起動・YABE 北向き接続確認（PR-NF-005 / AC-2）
+- [ ] **Raspberry Pi（ARM）でネイティブ起動**（uv ＋ `bbc-sim run`、Docker 非依存）・YABE 北向き接続確認（PR-NF-019,020 / AC-2 / [[ADR-008]]）
+- [ ] Docker `docker compose up` 起動でも同等動作（任意手段・PR-NF-005）
 
 ## Specs / ADR
 
-仕様: `../../specs/requirements-definition-v1.1.md` §5–10,§13–16。決定: [[ADR-001]][[ADR-002]][[ADR-003]][[ADR-004]][[ADR-007]]
+仕様: `../../specs/requirements-definition-v1.1.md` §5–10,§13–16。決定: [[ADR-001]][[ADR-002]][[ADR-003]][[ADR-004]][[ADR-007]][[ADR-008]]

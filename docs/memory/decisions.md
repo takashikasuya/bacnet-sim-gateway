@@ -20,6 +20,7 @@ metadata:
 | ADR-005 | 北向き=BACnet/IP、南向き=MQTT/ZeroMQ/WoT/gRPC（v1.2訂正） | PRD v1.2 |
 | ADR-006 | セマンティックタグ = BACnet `tags` ＋ Project Haystack | PRD v1.3 |
 | ADR-007 | object type をデータ型＋writable から自動推定（BACnet列優先） | 要件§6 |
+| ADR-008 | Raspberry Pi/ネイティブ実行をファーストクラス・Docker は任意（1 instance=1 B-BC） | PRD v1.4 |
 
 ## Pending Decisions
 

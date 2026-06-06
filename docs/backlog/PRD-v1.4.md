@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |------|------|
 | 文書名 | SBCO BACnet B-BC Simulator / Gateway 製品要求仕様書 (Product Requirements Specification) |
-| バージョン | v1.3 (Draft) |
+| バージョン | v1.4 (Draft) |
 | 上位/関連文書 | SBCO BACnet B-BC Simulator 要件定義書 v1.1 (`../specs/requirements-definition-v1.1.md`) |
 | 位置づけ | 要件定義書の上位文書。「何を・なぜ・誰のために・どこまで満たせば完成か」を定義する |
 | 対象読者 | プロダクトオーナー、システムエンジニア、開発者、品質保証、連携製品開発者 |
@@ -18,6 +18,7 @@
 | v1.1 | 上位連携の前提（Eclipse Hono 等のゲートウェイ経由で Building OS へ）を明文化。シミュレータ／ゲートウェイのデュアルモードと多プロトコルバインディングを追加 |
 | v1.2 | **バインディングの方向性を修正**。ノースバウンド＝BACnet/IP（上位接続ゲートウェイが取り込む）、サウスバウンド＝MQTT / ZeroMQ / Web of Things / gRPC のバインディングに再定義。ゲートウェイモードを「南向きプロトコルのデータ源を BACnet オブジェクト化して北向きへ公開する」構成として明確化 |
 | v1.3 | 各 BACnet オブジェクトに**セマンティックタグ（`tags` プロパティ）**を付与する要求を追加。SBCO `tags` 列から決定的に生成し、語彙は **BACnet 標準タグ ＋ Project Haystack** を既定（将来 ASHRAE 223P へ連携） |
+| v1.4 | **Raspberry Pi（ARM）でのネイティブ実行**を要求化（PR-NF-019/020）。Docker は配布手段の一つであり必須ではない。SBCO 原典リポジトリの URL を明記 |
 
 ---
 
@@ -95,7 +96,7 @@
 - 上位連携前提: 北向き BACnet/IP を Eclipse Hono 等の接続ゲートウェイ／Ditto が取り込み Building OS へ
 - REST API による情報取得・制御・シナリオ操作
 - CLI ツール群
-- Docker / Docker Compose による配布・統合試験環境
+- **ネイティブ実行（Raspberry Pi / ARM、Docker 非依存）** ＋ Docker / Docker Compose による配布・統合試験環境
 
 ### 3.2 スコープ外 / 将来対象 (Out of Scope / Future)
 
@@ -148,7 +149,7 @@
 
 ### 4.3 構成原則
 
-- 1 Docker Container = 1 B-BC（要件定義書 4章）。ゲートウェイモードもこの単位を崩さない。
+- 1 ランタイムインスタンス = 1 B-BC（Docker コンテナでもネイティブプロセスでも同様。要件定義書 4章 / ADR-008）。ゲートウェイモードもこの単位を崩さない。
 - `gateway_id`（上位ゲートウェイ識別子）と `bbc_id` を混同しない。
 - 上位系（Building OS）への接続は接続ゲートウェイ（Hono 等）を経由する前提とし、本製品は北向き BACnet/IP のみを提供する（上位系直結を前提としない）。
 
@@ -327,6 +328,8 @@ object type 自動推定（PR-F-005）の規定：
 | PR-NF-016 | 一貫性 | Simulator/Gateway/Combined の各モードで同一オブジェクトモデル・同一識別子体系を用いる | M | 2 | 新 |
 | PR-NF-017 | 整合性 | 同一オブジェクトについて、南向き入力値と北向き BACnet `presentValue` が論理的に一致する | M | 2 | 新 |
 | PR-NF-018 | 意味相互運用 | タグ語彙（BACnet 標準タグ＋Haystack）を一貫適用し、未知タグは検証で警告する | S | 2 | 新 |
+| PR-NF-019 | 移植性 | Raspberry Pi（ARM/ARM64）上でネイティブに動作する | M | 1 | 新 |
+| PR-NF-020 | 移植性 | Docker 非依存のネイティブ実行（uv 等）を提供する。Docker は推奨配布手段の一つであり必須ではない | M | 1 | 新 |
 
 ---
 
@@ -335,7 +338,7 @@ object type 自動推定（PR-F-005）の規定：
 | ID | 制約 |
 |----|------|
 | CON-1 | 入力ソースは SBCO 標準ポイントリストに限定する（他形式は中間で SBCO/YAML に正規化） |
-| CON-2 | 1 Docker Container = 1 B-BC の物理対応を崩さない（ゲートウェイモードも同様） |
+| CON-2 | 1 ランタイムインスタンス = 1 B-BC（Docker コンテナでもネイティブプロセスでも同様）。ゲートウェイモードも崩さない |
 | CON-3 | `gateway_id` を `bbc_id` に流用しない |
 | CON-4 | BACnet 公開・サービス挙動は ANSI/ASHRAE 135 / ISO 16484-5 の範囲で実装する |
 | CON-5 | 既定の BACnet トランスポートは BACnet/IP（BACnet/SC は将来対象） |
@@ -346,7 +349,8 @@ object type 自動推定（PR-F-005）の規定：
 
 ## 9. 前提・依存関係 (Assumptions & Dependencies)
 
-- 入力となる SBCO 標準ポイントリストは `smartbuilding_datamodel_builder` リポジトリの仕様に準拠する。
+- 入力となる SBCO 標準ポイントリストは `smartbuilding_datamodel_builder` リポジトリ（**原典**: https://github.com/smartbuilding-co-creation-organization/smartbuilding_datamodel_builder ）の仕様に準拠する。
+- 実行環境として Raspberry Pi（ARM/ARM64, Linux）を含む。Docker が使えない/使わない環境でもネイティブに動作すること（PR-NF-019/020）。
 - 上位経路として Eclipse Hono（接続ゲートウェイ／BACnet コネクタを含む）および Eclipse Ditto（デジタルツイン）が別途利用可能であること。
 - 南向き試験のため、MQTT Broker、ZeroMQ/gRPC/WoT のデータ源（実機または擬似デバイス）が利用可能であること。
 - 北向き確認のため、YABE 等の BACnet クライアントが利用可能であること。

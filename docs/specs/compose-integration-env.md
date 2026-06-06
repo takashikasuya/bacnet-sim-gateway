@@ -9,6 +9,8 @@
 | 関連要求 | PR-NF-004〜007, PR-F-088, PR-F-089 / AC-1〜13 |
 | 原則 | 北向き BACnet/IP は接続ゲートウェイが取り込む。南向き擬似デバイスは MQTT/ZeroMQ/WoT/gRPC で本製品にデータ供給 |
 
+> **前提**: 本製品のファーストクラス実行形態は Raspberry Pi 等での**ネイティブ実行**（[[ADR-008]]）。本書の Docker / Compose は **統合試験・CI のための任意手段**であり、製品が Docker を必須とするものではない。ネイティブ単体起動は `bbc-sim run --config simulator.yaml`（要件§13.1）。
+
 ## 1. トポロジ ✅
 
 ```

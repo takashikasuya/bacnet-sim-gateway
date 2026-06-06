@@ -7,7 +7,7 @@ metadata:
 
 # Architecture
 
-> 詳細は PRD v1.3 §4（`../backlog/PRD-v1.3.md`）と要件定義書 §3,§4（`../specs/requirements-definition-v1.1.md`）。
+> 詳細は PRD v1.4 §4（`../backlog/PRD-v1.4.md`）と要件定義書 §3,§4（`../specs/requirements-definition-v1.1.md`）。
 
 ## 連携方向（最重要）
 
@@ -49,22 +49,34 @@ SBCO Point List (CSV/XLSX) → YAML Generator → simulator.yaml → B-BC Runtim
 
 ## 主要制約
 
-- 1 Container = 1 B-BC（[[ADR-002]]）
+- 1 ランタイムインスタンス = 1 B-BC（コンテナ/プロセス共通・[[ADR-002]][[ADR-008]]）
 - `gateway_id` ≠ `bbc_id`（[[ADR-003]]）
 - 入力は SBCO のみ（[[ADR-001]]）
-- BACnet/IP（UDP 47808）、`network_mode: host` 推奨
+- BACnet/IP（UDP 47808）、Docker 時は `network_mode: host` 推奨
 - 規格: ANSI/ASHRAE 135-2024 / ISO 16484-5
+
+## 実行環境・配布
+
+- **Raspberry Pi（ARM/ARM64, Linux）でネイティブ実行をファーストクラス**（[[ADR-008]]）。`uv` ＋ `bbc-sim` CLI。
+- Docker / docker compose は任意の配布・統合試験手段（必須ではない）。
+- → BACnet ライブラリ・依存は ARM 上でビルド/動作できること。
+
+## 入力ソース（原典）
+
+- SBCO 標準ポイントリスト: https://github.com/smartbuilding-co-creation-organization/smartbuilding_datamodel_builder
+- 列定義はこのリポジトリに追従（[[ADR-001]]）。詳細は [[sbco-datamodel-builder-repo]]。
 
 ## Technology Stack
 
 - Language: Python 3.12 / uv
-- BACnet library: TBD（bacpypes3 が有力。decisions.md 参照）
+- BACnet library: TBD（bacpypes3 が有力。ARM 動作要確認。decisions.md 参照）
 - 南向き: MQTT（Mosquitto/EMQX）, ZeroMQ, WoT, gRPC
 - Config: YAML
-- 配布: Docker / docker compose
+- 配布: ネイティブ（uv, Raspberry Pi）＋ Docker（任意）
 
 ## Open Questions
 
-- [ ] BACnet ライブラリ（bacpypes3 vs BAC0）— decisions.md 参照
+- [ ] BACnet ライブラリ（bacpypes3 vs BAC0、ARM 動作）— decisions.md 参照
 - [ ] 南向き内部モデルの抽象 API（MVP-2）
 - [ ] instance_no 自動採番ルール
+- [ ] サポート対象 OS/アーキと Python 配布形態（要件§13.1）

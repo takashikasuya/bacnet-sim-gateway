@@ -1,7 +1,7 @@
 # SBCO BACnet B-BC Simulator 要件定義書 v1.1
 
 > **位置づけ**: 本書は実装方式・データ構造・CLI 仕様・試験シナリオの **設計 (Specification) の正** とする。
-> 上位の製品要求は `../backlog/PRD-v1.3.md` を参照。設計判断の根拠は `../adr/` を参照。
+> 上位の製品要求は `../backlog/PRD-v1.4.md` を参照。設計判断の根拠は `../adr/` を参照。
 
 ---
 
@@ -132,6 +132,8 @@ BBC_ID=bbc-local-001
 - `point-list.xlsx`
 
 対象は `smartbuilding_datamodel_builder` repository の SBCO標準ポイントリストとする。
+**原典リポジトリ**: https://github.com/smartbuilding-co-creation-organization/smartbuilding_datamodel_builder
+（必須列・任意列・BACnet 列の定義はこのリポジトリの仕様に追従する。）
 
 **必須列**
 
@@ -338,25 +340,21 @@ fault:
 
 ---
 
-## 13. Docker要件
+## 13. 実行・配布要件
 
-**基本**
+### 13.1 ネイティブ実行（Raspberry Pi / ARM）✅（PR-NF-019/020）
 
-```
-1 Container = 1 B-BC
-```
+- Docker 非依存でネイティブに動作すること。Raspberry Pi（ARM/ARM64, Linux）を実行環境に含む。
+- 配布: `uv` による依存解決＋ `bbc-sim` CLI 実行（`bbc-sim run --config simulator.yaml`）。
+- BACnet/IP のブロードキャスト（Who-Is/I-Am）はホスト NIC 上で直接動作する（ネイティブ実行では Docker のネットワーク制約を受けない）。
+- 1 ランタイムインスタンス = 1 B-BC（プロセス単位。Docker でもネイティブでも同様）。
+- ❓ サポート対象 OS/アーキ（Raspberry Pi OS 64bit / Debian arm64 等）と Python 配布形態（uv / システム Python / 単一バイナリ）は要確定。
 
-**起動**
+### 13.2 Docker（任意の配布手段）✅
 
-```
-docker compose up
-```
+**基本**: 1 Container = 1 B-BC ／ **起動**: `docker compose up` ／ **推奨**: `network_mode: host`
 
-**推奨**
-
-```
-network_mode: host
-```
+> Docker は配布・統合試験の便宜のための手段であり必須ではない（PR-NF-020）。CI や複数 B-BC 同居には Docker / Compose が便利。
 
 ---
 
@@ -424,7 +422,7 @@ objects:
 | TS-10 | BBMD | 別サブネット探索 |
 | TS-11 | Fault Injection | 異常値 / 通信断 / 値停止 / OutOfService |
 
-> PRD v1.3 で TS-12（Combined モード同時公開）/ TS-13（ZeroMQ・WoT・gRPC バインディング）/ TS-14（tags プロパティ）を追加想定。
+> PRD v1.4 で TS-12（Combined モード同時公開）/ TS-13（ZeroMQ・WoT・gRPC バインディング）/ TS-14（tags プロパティ）を追加想定。
 
 ---
 
