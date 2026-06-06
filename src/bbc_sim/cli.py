@@ -66,12 +66,14 @@ def _report(errors: list[str], *, ok: str) -> None:
     typer.secho(ok, fg=typer.colors.GREEN)
 
 
-# Runtime and client commands are registered by their modules.
+# Runtime, client, and export commands are registered by their modules.
+from bbc_sim.export.cli import register as _register_export  # noqa: E402
 from bbc_sim.services.cli import register as _register_client  # noqa: E402
 from bbc_sim.simulator_runtime.cli import register as _register_runtime  # noqa: E402
 
 _register_runtime(app)
 _register_client(app)
+_register_export(app)
 
 
 if __name__ == "__main__":
