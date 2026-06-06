@@ -6,6 +6,7 @@ WriteProperty to a command-bound object, publish the mapped value southbound.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from bacpypes3.app import Application
@@ -16,6 +17,8 @@ from bbc_sim.models import BacnetObjectSpec, BindingDirection, SimulatorConfig
 from bbc_sim.southbound.address import derive_address, mqtt_topics
 from bbc_sim.southbound.mapping import present_value_to_command, telemetry_to_present_value
 from bbc_sim.southbound.transport import Transport
+
+_log = logging.getLogger(__name__)
 
 
 def _oid_key(spec: BacnetObjectSpec) -> tuple[str, int]:
@@ -64,10 +67,13 @@ class SouthboundManager:
         oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
 
         async def handler(_channel: str, payload: bytes) -> None:
-            value = telemetry_to_present_value(spec, payload)
-            obj = self.app.get_object_id(oid)
-            if obj is not None:
-                obj.presentValue = value
+            try:
+                value = telemetry_to_present_value(spec, payload)
+                obj = self.app.get_object_id(oid)
+                if obj is not None:
+                    obj.presentValue = value
+            except Exception:  # noqa: BLE001 - never let a bad payload kill the loop
+                _log.exception("telemetry handling failed for %s", spec.point_id)
 
         return handler
 

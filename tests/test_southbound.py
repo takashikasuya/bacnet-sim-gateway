@@ -61,6 +61,34 @@ def test_command_roundtrip_value(sample_pointlist):
     assert json.loads(payload)["value"] == pytest.approx(23.5)
 
 
+def test_binary_telemetry_default_mapping(sample_pointlist):
+    # binary object with a default (type='real') mapping must still produce a BinaryPV.
+    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
+    o = next(x for x in cfg.objects if x.point_id == "PT003")  # binaryInput
+    o.binding = BindingSpec(protocol="mqtt")
+    assert telemetry_to_present_value(o, json.dumps({"value": True}).encode()) == "active"
+    assert telemetry_to_present_value(o, json.dumps({"value": 0}).encode()) == "inactive"
+
+
+def test_binary_command_default_mapping(sample_pointlist):
+    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
+    o = next(x for x in cfg.objects if x.point_id == "PT004")  # binaryOutput (writable)
+    o.binding = BindingSpec(protocol="mqtt", direction=BindingDirection.command)
+    assert json.loads(present_value_to_command(o, "active"))["value"] is True
+    assert json.loads(present_value_to_command(o, "inactive"))["value"] is False
+
+
+def test_multistate_telemetry_enum_map(sample_pointlist):
+    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
+    o = next(x for x in cfg.objects if x.point_id == "PT007")  # multiStateValue
+    o.binding = BindingSpec(
+        protocol="mqtt",
+        mapping=BindingMapping(type="enum", enum_map={"1": "Auto", "2": "Manual", "3": "Off"}),
+    )
+    assert telemetry_to_present_value(o, json.dumps({"value": "Manual"}).encode()) == 2
+    assert telemetry_to_present_value(o, json.dumps({"value": 3}).encode()) == 3
+
+
 # ---- binding manager over the real object model ----
 
 
@@ -143,3 +171,13 @@ def test_factory_memory():
 def test_factory_rejects_unknown():
     with pytest.raises(ValueError):
         make_transport("carrier-pigeon://nest")
+
+
+def test_command_binding_on_nonwritable_is_invalid(sample_pointlist):
+    from bbc_sim.yaml_generator.yaml_io import validate_config
+
+    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
+    ai = next(o for o in cfg.objects if o.point_id == "PT001")  # writable=False
+    ai.binding = BindingSpec(protocol="mqtt", direction=BindingDirection.command)
+    errors = validate_config(cfg)
+    assert any("command binding requires writable" in e for e in errors)

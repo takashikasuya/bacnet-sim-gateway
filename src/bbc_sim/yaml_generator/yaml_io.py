@@ -192,6 +192,15 @@ def validate_config(config: SimulatorConfig) -> list[str]:
         s.add(o.object_instance)
         if o.object_type.is_multistate and not o.state_text:
             errors.append(f"{o.point_id}: multi-state object missing state_text")
+        if (
+            o.binding
+            and o.binding.direction in (BindingDirection.command, BindingDirection.both)
+            and not o.writable
+        ):
+            errors.append(
+                f"{o.point_id}: command binding requires writable=true "
+                "(non-writable objects reject WriteProperty)"
+            )
     return errors
 
 
