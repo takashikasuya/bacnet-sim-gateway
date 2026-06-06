@@ -1,6 +1,10 @@
 """EP-004 — upper-system integration: BBMD/FDR, northbound consumer, control loop.
 
 (AC-7/8/9/10, PR-F-041/088/089, TS-09/10)
+
+These use loopback BACnet + the in-memory transport, so they run in the default CI
+``test`` job (no broker needed). The separate ``integration`` CI job (Mosquitto) covers
+the real-broker MQTT path in ``test_southbound_integration.py``.
 """
 
 from __future__ import annotations
@@ -41,6 +45,11 @@ def test_network_bbmd_roundtrips(sample_pointlist):
     loaded = dict_to_config(config_to_dict(cfg))
     assert loaded.network.foreign_bbmd == "10.0.0.1:47808"
     assert loaded.network.foreign_ttl == 60
+
+    cfg2, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
+    cfg2.network.bbmd_bdt = ["10.0.0.2:47808", "10.0.0.3:47808"]
+    loaded2 = dict_to_config(config_to_dict(cfg2))
+    assert loaded2.network.bbmd_bdt == ["10.0.0.2:47808", "10.0.0.3:47808"]
 
 
 # ---- Northbound consumer (Hono-style connector) over loopback (AC-7) ----
