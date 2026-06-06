@@ -12,8 +12,13 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
-from bacpypes3.apdu import WritePropertyRequest
+from bacpypes3.apdu import (
+    WritePropertyMultipleError,
+    WritePropertyMultipleRequest,
+    WritePropertyRequest,
+)
 from bacpypes3.app import Application
+from bacpypes3.basetypes import ErrorType, ObjectPropertyReference
 from bacpypes3.errors import ExecutionError
 
 from bbc_sim.bacnet_objects.builder import build_object_list
@@ -48,13 +53,52 @@ class BBCApplication(Application):
             if obj is not None:
                 await self.on_command(oid, obj.presentValue)
 
+    async def do_WritePropertyMultipleRequest(
+        self, apdu: WritePropertyMultipleRequest
+    ) -> None:
+        # Enforce writable on every present-value element before delegating (AC-5).
+        # Use WritePropertyMultipleError (the encodable WPM error) so the client gets a
+        # proper response rather than timing out.
+        for spec in apdu.listOfWriteAccessSpecs:
+            oid = (str(spec.objectIdentifier[0]), int(spec.objectIdentifier[1]))
+            for prop_value in spec.listOfProperties:
+                if (
+                    str(prop_value.propertyIdentifier) in _PRESENT_VALUE
+                    and oid not in self._writable_oids
+                ):
+                    raise WritePropertyMultipleError(
+                        errorType=ErrorType(
+                            errorClass="property", errorCode="writeAccessDenied"
+                        ),
+                        firstFailedWriteAttempt=ObjectPropertyReference(
+                            objectIdentifier=spec.objectIdentifier,
+                            propertyIdentifier=prop_value.propertyIdentifier,
+                        ),
+                    )
+        await super().do_WritePropertyMultipleRequest(apdu)
+        if not self.on_command:
+            return
+        for spec in apdu.listOfWriteAccessSpecs:
+            oid = (str(spec.objectIdentifier[0]), int(spec.objectIdentifier[1]))
+            if oid not in self._command_oids:
+                continue
+            if any(str(p.propertyIdentifier) in _PRESENT_VALUE for p in spec.listOfProperties):
+                obj = self.get_object_id(spec.objectIdentifier)
+                if obj is not None:
+                    await self.on_command(oid, obj.presentValue)
 
-def build_application(config: SimulatorConfig) -> BBCApplication:
-    """Build the BACnet/IP Application. Must be called inside a running event loop."""
-    objects = build_object_list(config)
+
+def build_application(config: SimulatorConfig, *, with_network: bool = True) -> BBCApplication:
+    """Build the Application. With network (default) it serves BACnet/IP and must be
+    called inside a running event loop; without it (control-plane tests) no datalink is
+    created.
+    """
+    objects = build_object_list(config, with_network=with_network)
     app = BBCApplication.from_object_list(objects)
-    # objects = [device, network-port, *config.objects] in order.
-    point_objects = objects[2:]
+    # Match point objects to specs by object identity, not list position.
+    point_objects = [
+        o for o in objects if str(o.objectIdentifier[0]) not in ("device", "network-port")
+    ]
     app._writable_oids = frozenset(
         (str(obj.objectIdentifier[0]), int(obj.objectIdentifier[1]))
         for obj, spec in zip(point_objects, config.objects, strict=True)
