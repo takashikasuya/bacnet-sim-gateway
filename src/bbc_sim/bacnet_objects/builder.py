@@ -86,6 +86,7 @@ def build_object(spec: BacnetObjectSpec) -> Object:
     if spec.object_type.is_analog:
         kwargs["presentValue"] = float(spec.present_value or 0.0)
         kwargs["units"] = spec.units or "noUnits"
+        kwargs["covIncrement"] = 0.1  # required for present-value COV reporting
         kwargs["resolution"] = 0.1  # required Analog property (§10)
         if spec.min_pres_value is not None:
             kwargs["minPresValue"] = float(spec.min_pres_value)
@@ -131,11 +132,14 @@ def build_network_port(network: NetworkConfig) -> NetworkPortObject:
     )
 
 
-def build_object_list(config: SimulatorConfig) -> list[Object]:
-    """Build [device, network-port, *objects] for Application.from_object_list."""
-    objects: list[Object] = [
-        build_device(config.bbc),
-        build_network_port(config.network),
-    ]
+def build_object_list(config: SimulatorConfig, *, with_network: bool = True) -> list[Object]:
+    """Build [device, (network-port), *objects] for Application.from_object_list.
+
+    ``with_network=False`` omits the BACnet/IP datalink — useful for control-plane
+    tests that don't need an event loop / UDP socket.
+    """
+    objects: list[Object] = [build_device(config.bbc)]
+    if with_network:
+        objects.append(build_network_port(config.network))
     objects.extend(build_object(spec) for spec in config.objects)
     return objects

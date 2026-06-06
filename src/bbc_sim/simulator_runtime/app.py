@@ -8,20 +8,22 @@ no blocking calls.
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
-from bacpypes3.apdu import WritePropertyRequest
+from bacpypes3.apdu import (
+    WritePropertyMultipleError,
+    WritePropertyMultipleRequest,
+    WritePropertyRequest,
+)
 from bacpypes3.app import Application
+from bacpypes3.basetypes import ErrorType, ObjectPropertyReference
 from bacpypes3.errors import ExecutionError
 
 from bbc_sim.bacnet_objects.builder import build_object_list
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.yaml_generator.yaml_io import load_config
-
-_log = logging.getLogger(__name__)
 
 _PRESENT_VALUE = {"present-value", "presentValue"}
 
@@ -51,13 +53,53 @@ class BBCApplication(Application):
             if obj is not None:
                 await self.on_command(oid, obj.presentValue)
 
+    async def do_WritePropertyMultipleRequest(
+        self, apdu: WritePropertyMultipleRequest
+    ) -> None:
+        # Enforce writable on every present-value element before delegating (AC-5).
+        # Raise the correct WPM error type server-side. Note: bacpypes3 0.0.106 cannot
+        # transport WPM error responses over IP (the client times out) — see
+        # docs/memory/pitfalls.md; enforcement is therefore verified at the handler level.
+        for spec in apdu.listOfWriteAccessSpecs:
+            oid = (str(spec.objectIdentifier[0]), int(spec.objectIdentifier[1]))
+            for prop_value in spec.listOfProperties:
+                if (
+                    str(prop_value.propertyIdentifier) in _PRESENT_VALUE
+                    and oid not in self._writable_oids
+                ):
+                    raise WritePropertyMultipleError(
+                        errorType=ErrorType(
+                            errorClass="property", errorCode="writeAccessDenied"
+                        ),
+                        firstFailedWriteAttempt=ObjectPropertyReference(
+                            objectIdentifier=spec.objectIdentifier,
+                            propertyIdentifier=prop_value.propertyIdentifier,
+                        ),
+                    )
+        await super().do_WritePropertyMultipleRequest(apdu)
+        if not self.on_command:
+            return
+        for spec in apdu.listOfWriteAccessSpecs:
+            oid = (str(spec.objectIdentifier[0]), int(spec.objectIdentifier[1]))
+            if oid not in self._command_oids:
+                continue
+            if any(str(p.propertyIdentifier) in _PRESENT_VALUE for p in spec.listOfProperties):
+                obj = self.get_object_id(spec.objectIdentifier)
+                if obj is not None:
+                    await self.on_command(oid, obj.presentValue)
 
-def build_application(config: SimulatorConfig) -> BBCApplication:
-    """Build the BACnet/IP Application. Must be called inside a running event loop."""
-    objects = build_object_list(config)
+
+def build_application(config: SimulatorConfig, *, with_network: bool = True) -> BBCApplication:
+    """Build the Application. With network (default) it serves BACnet/IP and must be
+    called inside a running event loop; without it (control-plane tests) no datalink is
+    created.
+    """
+    objects = build_object_list(config, with_network=with_network)
     app = BBCApplication.from_object_list(objects)
-    # objects = [device, network-port, *config.objects] in order.
-    point_objects = objects[2:]
+    # Match point objects to specs by object identity, not list position.
+    point_objects = [
+        o for o in objects if str(o.objectIdentifier[0]) not in ("device", "network-port")
+    ]
     app._writable_oids = frozenset(
         (str(obj.objectIdentifier[0]), int(obj.objectIdentifier[1]))
         for obj, spec in zip(point_objects, config.objects, strict=True)
@@ -70,43 +112,27 @@ async def run_async(
     config: SimulatorConfig,
     stop: asyncio.Event | None = None,
     transport_uri: str | None = None,
+    rest_port: int | None = None,
 ) -> None:
-    """Run the B-BC until ``stop`` is set (or forever).
+    """Run the full B-BC (server + engine + bindings + optional REST) until stopped."""
+    from bbc_sim.simulator_runtime.runtime import Runtime
 
-    In gateway/combined mode (or whenever objects carry bindings) a southbound
-    transport is started from ``transport_uri``.
-    """
-    from bbc_sim.models import RuntimeMode
-
-    app = build_application(config)
-    manager = None
-    has_bindings = any(o.binding for o in config.objects)
-    needs_southbound = config.mode is not RuntimeMode.simulator and has_bindings
-    if needs_southbound and not transport_uri:
-        _log.warning(
-            "mode=%s with bound object(s) but no --transport; southbound bindings are "
-            "inactive (use memory:// for an in-process fake)", config.mode.value,
-        )
-    if needs_southbound and transport_uri:
-        from bbc_sim.southbound.binding import SouthboundManager
-        from bbc_sim.southbound.factory import make_transport
-
-        manager = SouthboundManager(app, config, make_transport(transport_uri))
-        await manager.start()
-
-    stop = stop or asyncio.Event()
-    try:
-        await stop.wait()
-    finally:
-        if manager is not None:
-            await manager.stop()
-        app.close()
+    runtime = Runtime(config, transport_uri=transport_uri, rest_port=rest_port)
+    await runtime.run_forever(stop)
 
 
-def run(config: SimulatorConfig, transport_uri: str | None = None) -> None:
+def run(
+    config: SimulatorConfig,
+    transport_uri: str | None = None,
+    rest_port: int | None = None,
+) -> None:
     """Blocking entry point for the CLI."""
-    asyncio.run(run_async(config, transport_uri=transport_uri))
+    asyncio.run(run_async(config, transport_uri=transport_uri, rest_port=rest_port))
 
 
-def run_from_path(config_path: str | Path, transport_uri: str | None = None) -> None:
-    run(load_config(config_path), transport_uri=transport_uri)
+def run_from_path(
+    config_path: str | Path,
+    transport_uri: str | None = None,
+    rest_port: int | None = None,
+) -> None:
+    run(load_config(config_path), transport_uri=transport_uri, rest_port=rest_port)

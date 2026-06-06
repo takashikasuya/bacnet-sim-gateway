@@ -21,6 +21,9 @@ def register(app: typer.Typer) -> None:
         transport: str | None = typer.Option(
             None, "--transport", help="southbound transport URI (mqtt://host:port, zmq://...)"
         ),
+        rest_port: int | None = typer.Option(
+            None, "--rest-port", help="serve the REST control plane on this port"
+        ),
     ) -> None:
         """Start the virtual B-BC and serve it on BACnet/IP (northbound)."""
         errors = validate_yaml(config)
@@ -33,6 +36,6 @@ def register(app: typer.Typer) -> None:
             cfg.mode = mode
         typer.secho(f"starting B-BC from {config} (Ctrl-C to stop)", fg=typer.colors.GREEN)
         try:
-            run(cfg, transport_uri=transport)
+            run(cfg, transport_uri=transport, rest_port=rest_port)
         except KeyboardInterrupt:  # pragma: no cover - interactive
             typer.echo("stopped")

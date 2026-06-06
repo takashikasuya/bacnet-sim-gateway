@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
+from typing import Any
 
 # Required input columns (requirements §5).
 REQUIRED_COLUMNS: tuple[str, ...] = (
@@ -144,7 +145,8 @@ class NetworkConfig:
 @dataclass
 class UpdateConfig:
     interval: int | None = None
-    mode: str | None = None
+    mode: str | None = None  # random_walk | sinusoidal | replay | scenario
+    params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

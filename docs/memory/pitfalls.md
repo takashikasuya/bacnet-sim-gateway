@@ -38,3 +38,20 @@ _(To be documented once library is chosen — see ADR-001)_
 
 BACnet/IP requires UDP broadcast. Docker bridge networking blocks broadcasts by default.
 Use `--network host` on Linux / WSL2 or configure a dedicated Docker bridge with `com.docker.network.bridge.host_binding_ipv4`.
+
+## bacpypes3 0.0.106: WPM error responses don't transport over IP
+
+`WritePropertyMultipleRequest` *success* round-trips fine, but when the server raises
+`WritePropertyMultipleError` (e.g. write-access-denied on a non-writable point), the IPv4
+datalink fails to send the error PDU (`NoneType has no attribute 'sendto'`) and the client
+times out instead of receiving an error. This is a library limitation, not ours.
+Consequence: we verify WPM write-access enforcement (AC-5) at the **handler level**
+(`BBCApplication.do_WritePropertyMultipleRequest` raises the correct error) rather than
+over loopback. WriteProperty (single) error responses transport correctly.
+
+## bacpypes3 objects need a current event loop at construction
+
+Constructing local objects schedules `_post_init` via `asyncio.ensure_future`, which needs a
+current event loop. Async tests get one from pytest-asyncio; sync tests must set one (see the
+`_current_loop_for_sync_tests` autouse fixture in `tests/conftest.py`). Analog objects also
+need `covIncrement` set for present-value COV reporting.

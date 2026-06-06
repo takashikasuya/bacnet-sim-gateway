@@ -83,6 +83,72 @@ async def write_property(
     await app.write_property(target, objid, prop, value)
 
 
+async def write_property_multiple(
+    app: Application, target: str, writes: list[tuple[str, Any]], prop: str = "present-value"
+) -> None:
+    """WritePropertyMultiple: ``writes`` is [(objid, value), ...] (requirements §9)."""
+    from bacpypes3.apdu import (
+        PropertyValue,
+        WriteAccessSpecification,
+        WritePropertyMultipleRequest,
+    )
+    from bacpypes3.constructeddata import Any as BAny
+    from bacpypes3.primitivedata import ObjectIdentifier, Real
+
+    specs = []
+    for objid, value in writes:
+        pv = PropertyValue(propertyIdentifier=prop, value=BAny(Real(float(value))))
+        specs.append(
+            WriteAccessSpecification(
+                objectIdentifier=ObjectIdentifier(objid), listOfProperties=[pv]
+            )
+        )
+    req = WritePropertyMultipleRequest(listOfWriteAccessSpecs=specs)
+    req.pduDestination = Address(target)
+    await app.request(req)
+
+
+async def subscribe_cov(
+    app: Application,
+    target: str,
+    objid: str,
+    process_id: int = 1,
+    confirmed: bool = False,
+    lifetime: int = 60,
+) -> None:
+    """Send SubscribeCOV for an object (requirements §9, PR-F-028)."""
+    from bacpypes3.apdu import SubscribeCOVRequest
+    from bacpypes3.primitivedata import ObjectIdentifier
+
+    req = SubscribeCOVRequest(
+        subscriberProcessIdentifier=process_id,
+        monitoredObjectIdentifier=ObjectIdentifier(objid),
+        issueConfirmedNotifications=confirmed,
+        lifetime=lifetime,
+    )
+    req.pduDestination = Address(target)
+    await app.request(req)
+
+
+def capture_cov_notifications(app: Application) -> list[tuple[str, str]]:
+    """Patch a client app to record COV notifications; returns the growing list."""
+    captured: list[tuple[str, str]] = []
+    orig_u = app.do_UnconfirmedCOVNotificationRequest
+    orig_c = app.do_ConfirmedCOVNotificationRequest
+
+    async def do_u(apdu: Any) -> None:
+        captured.append(("unconfirmed", str(apdu.monitoredObjectIdentifier)))
+        await orig_u(apdu)
+
+    async def do_c(apdu: Any) -> None:
+        captured.append(("confirmed", str(apdu.monitoredObjectIdentifier)))
+        await orig_c(apdu)
+
+    app.do_UnconfirmedCOVNotificationRequest = do_u  # type: ignore[method-assign]
+    app.do_ConfirmedCOVNotificationRequest = do_c  # type: ignore[method-assign]
+    return captured
+
+
 async def list_objects(app: Application, target: str) -> list[str]:
     """Discover the target B-BC and read its object-list."""
     found = await whois(app, target)
