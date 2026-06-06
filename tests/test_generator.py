@@ -104,6 +104,27 @@ def test_validate_clean_config(config):
     assert validate_config(config) == []
 
 
+def test_validate_yaml_handles_non_dict(tmp_path):
+    from bbc_sim.yaml_generator.yaml_io import validate_yaml
+
+    empty = tmp_path / "empty.yaml"
+    empty.write_text("", encoding="utf-8")  # parses to None
+    errors = validate_yaml(empty)
+    assert errors and "invalid simulator.yaml" in errors[0]
+
+
+def test_writable_quoted_string_is_false(config, tmp_path):
+    from bbc_sim.yaml_generator.yaml_io import dump_config, load_config
+
+    config.objects[0].writable = True
+    path = tmp_path / "sim.yaml"
+    dump_config(config, path)
+    text = path.read_text(encoding="utf-8").replace("writable: true", "writable: 'false'", 1)
+    path.write_text(text, encoding="utf-8")
+    loaded = load_config(path)
+    assert loaded.objects[0].writable is False  # quoted 'false' must not be truthy
+
+
 # ---- edge cases (from review of EP-001) ----
 
 

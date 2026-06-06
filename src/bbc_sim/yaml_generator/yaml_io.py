@@ -104,6 +104,13 @@ def dump_config(config: SimulatorConfig, path: str | Path) -> None:
     )
 
 
+def _coerce_bool(value: Any) -> bool:
+    """Interpret YAML/JSON truthiness, including quoted strings like 'false'/'no'."""
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y", "on")
+    return bool(value)
+
+
 def _binding_from_dict(b: dict[str, Any] | None) -> BindingSpec | None:
     if not b:
         return None
@@ -137,7 +144,7 @@ def _object_from_dict(d: dict[str, Any]) -> BacnetObjectSpec:
         active_text=d.get("active_text"),
         inactive_text=d.get("inactive_text"),
         scale=float(d.get("scale", 1.0)),
-        writable=bool(d.get("writable", False)),
+        writable=_coerce_bool(d.get("writable", False)),
         description=d.get("description", ""),
         update=UpdateConfig(interval=upd.get("interval"), mode=upd.get("mode")),
         metadata=dict(d.get("metadata", {})),
@@ -207,6 +214,6 @@ def validate_config(config: SimulatorConfig) -> list[str]:
 def validate_yaml(path: str | Path) -> list[str]:
     try:
         config = load_config(path)
-    except (KeyError, ValueError, yaml.YAMLError) as exc:
+    except (KeyError, ValueError, TypeError, AttributeError, yaml.YAMLError) as exc:
         return [f"invalid simulator.yaml: {exc}"]
     return validate_config(config)
