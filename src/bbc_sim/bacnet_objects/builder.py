@@ -121,13 +121,31 @@ def build_device(bbc: BbcConfig) -> DeviceObject:
 
 
 def build_network_port(network: NetworkConfig) -> NetworkPortObject:
-    """Build the NetworkPort describing the BACnet/IP datalink."""
+    """Build the NetworkPort describing the BACnet/IP datalink.
+
+    Applies Foreign Device Registration (foreign_bbmd) or BBMD mode (bbmd_bdt) for
+    cross-subnet discovery (requirements §12, PR-F-041).
+    """
     address = f"{network.bind_address}:{network.port}"
-    return NetworkPortObject(
+    np = NetworkPortObject(
         address,
         objectIdentifier=("network-port", 1),
         objectName="NetworkPort-1",
     )
+    if network.foreign_bbmd:
+        from bacpypes3.basetypes import HostNPort, IPMode
+
+        np.bacnetIPMode = IPMode.foreign
+        np.fdBBMDAddress = HostNPort(network.foreign_bbmd)
+        np.fdSubscriptionLifetime = network.foreign_ttl
+    elif network.bbmd_bdt:
+        from bacpypes3.basetypes import BDTEntry, IPMode
+
+        np.bacnetIPMode = IPMode.bbmd
+        np.bbmdAcceptFDRegistrations = True
+        np.bbmdForeignDeviceTable = []
+        np.bbmdBroadcastDistributionTable = [BDTEntry(addr) for addr in network.bbmd_bdt]
+    return np
 
 
 def build_object_list(config: SimulatorConfig, *, with_network: bool = True) -> list[Object]:

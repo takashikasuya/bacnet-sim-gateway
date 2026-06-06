@@ -79,6 +79,20 @@ def _object_to_dict(o: BacnetObjectSpec) -> dict[str, Any]:
     return d
 
 
+def _network_to_dict(net: NetworkConfig) -> dict[str, Any]:
+    d: dict[str, Any] = {
+        "type": net.type,
+        "bind_address": net.bind_address,
+        "port": net.port,
+    }
+    if net.foreign_bbmd:
+        d["foreign_bbmd"] = net.foreign_bbmd
+        d["foreign_ttl"] = net.foreign_ttl
+    if net.bbmd_bdt:
+        d["bbmd_bdt"] = net.bbmd_bdt
+    return d
+
+
 def config_to_dict(config: SimulatorConfig) -> dict[str, Any]:
     return {
         "bbc": {
@@ -89,11 +103,7 @@ def config_to_dict(config: SimulatorConfig) -> dict[str, Any]:
             "vendor_identifier": config.bbc.vendor_identifier,
             "model_name": config.bbc.model_name,
         },
-        "network": {
-            "type": config.network.type,
-            "bind_address": config.network.bind_address,
-            "port": config.network.port,
-        },
+        "network": _network_to_dict(config.network),
         "mode": config.mode.value,
         "objects": [_object_to_dict(o) for o in config.objects],
     }
@@ -167,6 +177,9 @@ def dict_to_config(d: dict[str, Any]) -> SimulatorConfig:
             type=net.get("type", "bacnet-ip"),
             bind_address=net.get("bind_address", "0.0.0.0"),
             port=int(net.get("port", 47808)),
+            foreign_bbmd=net.get("foreign_bbmd"),
+            foreign_ttl=int(net.get("foreign_ttl", 30)),
+            bbmd_bdt=list(net.get("bbmd_bdt", [])),
         ),
         objects=[_object_from_dict(o) for o in d.get("objects", [])],
         mode=RuntimeMode(d.get("mode", "simulator")),

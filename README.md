@@ -43,3 +43,12 @@ uv run ruff check && uv run mypy
 
 - **Raspberry Pi (ARM/ARM64) ネイティブ起動**: 実機で `uv sync && uv run bbc-sim run -c config/simulator.yaml`（PR-NF-019/020, ADR-008）。CI/loopback はネイティブ起動経路を `bbc-sim run` のサブプロセス e2e で確認済みだが、ARM 実機確認は手動。
 - **YABE 北向き接続**: 同一サブネットの YABE から仮想 B-BC を探索し、ReadProperty/WriteProperty を GUI で確認（TS-02..05 の GUI 経路）。プロトコル往復はループバック統合テストで確認済み。
+
+## Manual acceptance (EP-004 upper-system integration)
+
+自動化対象外（実外部システムが必要）の項目:
+
+- **Eclipse Hono / BACnet コネクタ取り込み (AC-7, TS-06..08)**: 北向き BACnet を接続ゲートウェイが取り込めること。CI/loopback では「BACnet クライアントが全オブジェクトを探索・読取できる」ことで取り込み可能性を確認済み（`test_upper_integration.py`）。実 Hono 連携は手動。
+- **Ditto / Building OS まで疎通 (AC-7, AC-8, TS-07..08)**: 実 Ditto・Building OS への到達は手動。
+- **異サブネット探索 (AC-10, TS-10)**: `network.foreign_bbmd` で Foreign Device 登録、`network.bbmd_bdt` で BBMD として動作する設定を実装済み（ユニットテスト済み）。実 BBMD を挟んだ別サブネット探索は手動。
+- **統合環境**: `docker compose -f docker/docker-compose.integration.yml up --build`（B-BC gateway + Mosquitto）。CI には `integration` ジョブ（Mosquitto + `pytest -m integration`）がある。
