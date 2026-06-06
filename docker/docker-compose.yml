@@ -1,0 +1,11 @@
+# Optional integration env (ADR-002: 1 container = 1 B-BC; ADR-008: Docker optional).
+# Discovery needs host networking for BACnet/IP broadcast.
+services:
+  bbc-sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    network_mode: host
+    volumes:
+      - ../config:/app/config:ro
+    command: ["run", "--config", "config/simulator.yaml"]
