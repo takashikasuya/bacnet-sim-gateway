@@ -23,8 +23,10 @@ _DEVICE_SEED: dict[str, list[str]] = {
 
 # point_type (Brick Point class) -> point marker tags (Haystack vocabulary)
 _POINT_SEED: dict[str, list[str]] = {
-    "Temperature": ["sensor", "temp"],
-    "Humidity": ["sensor", "humidity"],
+    # Temperature/Humidity align with sbco-to-bacnet-mapping.md §6.5 worked example
+    # (室温センサ -> point, sensor, temp, air, zone).
+    "Temperature": ["sensor", "temp", "air", "zone"],
+    "Humidity": ["sensor", "humidity", "air"],
     "CO2 Concentration": ["sensor", "co2", "air"],
     "Illuminance": ["sensor", "illuminance"],
     "Motion": ["sensor", "occupancy"],
