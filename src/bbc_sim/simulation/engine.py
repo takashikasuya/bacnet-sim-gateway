@@ -49,6 +49,10 @@ class SimulationEngine:
                 self._generators.append((spec, oid, gen))
         self._task: asyncio.Task[None] | None = None
 
+    def has_generators(self) -> bool:
+        """Whether any object declares a value-generation mode."""
+        return bool(self._generators)
+
     def tick(self, t: float) -> None:
         """Advance all generators to time ``t`` and write presentValue (testable)."""
         for spec, oid, gen in self._generators:

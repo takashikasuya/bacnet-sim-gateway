@@ -1,7 +1,8 @@
 """ZeroMQ southbound transport (pyzmq async). Real network I/O; tests are integration.
 
 Uses a SUB socket for telemetry (multipart: channel, payload) and a PUB socket for
-commands. Bind/connect roles are configurable; default connects to a broker/proxy.
+commands. Both sockets ``connect()`` to the given endpoints (a broker/proxy is expected
+to bind). Configurable bind/connect roles are a future enhancement.
 """
 
 from __future__ import annotations

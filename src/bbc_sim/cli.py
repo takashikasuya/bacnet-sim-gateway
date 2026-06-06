@@ -27,11 +27,16 @@ def generate_yaml(
     """Generate simulator.yaml from an SBCO point list (aggregated, ADR-011)."""
     points = read_point_list(input)
     config, warnings = generate_config(points, bbc_id=bbc_id, device_id=bacnet_device_id)
-    # Validate the generated model before writing so problems surface early.
-    warnings.extend(validate_config(config))
-    dump_config(config, output)
+    # Inference notes are warnings; structural validation failures must fail the command
+    # so automation never treats an unusable simulator.yaml as a success.
     for w in warnings:
         typer.secho(f"warning: {w}", fg=typer.colors.YELLOW, err=True)
+    errors = validate_config(config)
+    if errors:
+        for e in errors:
+            typer.secho(f"error: {e}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1)
+    dump_config(config, output)
     typer.echo(f"wrote {output} ({len(config.objects)} objects)")
 
 

@@ -57,8 +57,9 @@ class BBCApplication(Application):
         self, apdu: WritePropertyMultipleRequest
     ) -> None:
         # Enforce writable on every present-value element before delegating (AC-5).
-        # Use WritePropertyMultipleError (the encodable WPM error) so the client gets a
-        # proper response rather than timing out.
+        # Raise the correct WPM error type server-side. Note: bacpypes3 0.0.106 cannot
+        # transport WPM error responses over IP (the client times out) — see
+        # docs/memory/pitfalls.md; enforcement is therefore verified at the handler level.
         for spec in apdu.listOfWriteAccessSpecs:
             oid = (str(spec.objectIdentifier[0]), int(spec.objectIdentifier[1]))
             for prop_value in spec.listOfProperties:

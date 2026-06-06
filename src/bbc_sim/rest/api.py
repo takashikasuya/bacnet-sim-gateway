@@ -86,7 +86,12 @@ def create_app(
         if not spec.writable:
             raise HTTPException(409, "object is not writable")
         obj = app.get_object_id(_oid(point_id))
-        obj.presentValue = body.value
+        if obj is None:
+            raise HTTPException(404, "object not present in runtime")
+        try:
+            obj.presentValue = body.value
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(400, f"invalid value for {point_id}: {exc}") from exc
         return _object_view(point_id)
 
     @api.post("/simulation/scenario")
@@ -94,14 +99,22 @@ def create_app(
         if body.point_id not in specs_by_point:
             raise HTTPException(404, "unknown object")
         obj = app.get_object_id(_oid(body.point_id))
+        if obj is None:
+            raise HTTPException(404, "object not present in runtime")
         if body.fault:
             try:
                 fault = FaultType(body.fault)
             except ValueError as exc:
                 raise HTTPException(400, f"unknown fault: {body.fault}") from exc
-            faults.apply(obj, fault, body.value)
+            try:
+                faults.apply(obj, fault, body.value)
+            except (ValueError, TypeError) as exc:
+                raise HTTPException(400, f"could not apply fault: {exc}") from exc
         elif body.value is not None:
-            obj.presentValue = body.value
+            try:
+                obj.presentValue = body.value
+            except (ValueError, TypeError) as exc:
+                raise HTTPException(400, f"invalid value: {exc}") from exc
         return _object_view(body.point_id)
 
     return api

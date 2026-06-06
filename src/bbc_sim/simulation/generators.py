@@ -52,6 +52,8 @@ class Sinusoidal(ValueGenerator):
     def __init__(self, spec: BacnetObjectSpec) -> None:
         self._lo, self._hi = _bounds(spec)
         self._period = float(spec.update.params.get("period", 60.0))
+        if self._period <= 0:
+            raise ValueError(f"{spec.point_id}: sinusoidal period must be > 0")
 
     def next(self, t: float) -> float:
         mid = (self._lo + self._hi) / 2

@@ -117,7 +117,8 @@ def generate_config(
             state_text = list(p.labels)
 
         # Brick-derived BACnet semantic tags (ADR-012). search_tags is the SBCO `tags`
-        # column kept verbatim (a different concept).
+        # column kept verbatim apart from order-preserving de-duplication.
+        search_tags = list(dict.fromkeys(p.tags))
         tags = derive_tags(p.device_type, p.point_type)
         if not has_mapping(p.device_type, p.point_type):
             warnings.append(
@@ -153,7 +154,7 @@ def generate_config(
                     "floor": p.floor,
                     "installation_area": p.installation_area,
                     "local_id": p.local_id,
-                    "search_tags": list(p.tags),  # SBCO `tags` column, verbatim
+                    "search_tags": search_tags,  # SBCO `tags` column, verbatim (deduped)
                 },
             )
         )

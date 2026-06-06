@@ -27,6 +27,13 @@ def _current_loop_for_sync_tests(request):
     try:
         yield
     finally:
+        # Cancel and drain any tasks bacpypes3 scheduled during object construction
+        # so we don't leak "Task was destroyed but it is pending" warnings.
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
         loop.close()
         asyncio.set_event_loop(None)
 
