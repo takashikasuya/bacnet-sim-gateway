@@ -1,0 +1,39 @@
+---
+name: decisions
+description: Index of design decisions (ADRs) and pending choices for the B-BC simulator/gateway
+metadata:
+  type: project
+---
+
+# Design Decisions
+
+> 正式な決定は `../adr/` に記録。本ファイルはその索引と、未決事項のメモ。
+
+## Settled (ADR で記録済み)
+
+| ADR | 決定 | 原典 |
+|-----|------|------|
+| ADR-001 | SBCO 標準ポイントリストを唯一の入力ソースとする | 要件§5,§22 |
+| ADR-002 | 1 Docker Container = 1 B-BC | 要件§4,§13 |
+| ADR-003 | `gateway_id` ≠ `bbc_id`（混同禁止・最重要） | 要件§4,§22 |
+| ADR-004 | YAML を中間モデルとする（全モード共有） | 要件§6,§14 |
+| ADR-005 | 北向き=BACnet/IP、南向き=MQTT/ZeroMQ/WoT/gRPC（v1.2訂正） | PRD v1.2 |
+| ADR-006 | セマンティックタグ = BACnet `tags` ＋ Project Haystack | PRD v1.3 |
+| ADR-007 | object type をデータ型＋writable から自動推定（BACnet列優先） | 要件§6 |
+
+## Pending Decisions
+
+- BACnet ライブラリ選定（bacpypes3 が有力。BAC0 は高レベルだが B-BC サーバ実装の柔軟性を要確認）→ 未 ADR
+- 南向きバインディングの内部モデル抽象（プロトコル非依存層の API 形）→ MVP-2 着手時に ADR 化
+
+### 下流設計書 v0.1 が surface した未決事項（❓）
+
+仕様の素案（`../specs/*.md`）に含まれる主要な未決。確定したら該当 spec を更新し、影響大は ADR 化。
+
+- **採番**（object-id-numbering）: フォールバック Device instance のハッシュ方式・範囲 / バンド採番の採否 / 複数 B-BC 同居時の Device instance 割当
+- **マッピング**（sbco-to-bacnet-mapping）: Output 系（AO/BO/MO）採用条件 / point_type→float/bool/enum 正規化 / Analog 既定値（min/max/resolution）/ priorityArray の扱い / enum 状態ラベルの SBCO 格納形式
+- **タグ**（ADR-006 詳細）: 採用する BACnet 標準タグ・Haystack タグ集合の確定 / `tags` 列構文（区切り・エスケープ）/ 名前空間表現
+- **南向き**（southbound-binding）: 各プロトコルの認証/TLS・ペイロード形式 / ZeroMQ・gRPC の bind/connect 役割 / MQTT retain・QoS
+- **モード**（operating-modes）: 無効プロトコル binding のフォールバック / 南向き接続の起動順序・リトライ
+- **適合**（pics-bibbs）: 目標 Protocol Revision の確定 / セグメンテーション・最大 APDU 既定 / 任意 BIBB（DM-UTC-B 等）採否 / ASHRAE 223P 連携段階
+- **試験環境**（compose-integration-env）: host と bridge の共存可否（分割 compose）/ CI 用 BACnet テスタ選定 / Hono・Ditto のモック化範囲
