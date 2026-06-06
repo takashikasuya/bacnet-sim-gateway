@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Review — SBCO BACnet B-BC Simulator / Gateway</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --ink:#e6e9ef; --muted:#9aa3b2;
+    --line:#2a2f3a; --accent:#4ea1ff; --accent2:#7c5cff; --ok:#39d98a; --warn:#ffb454;
+    --risk:#ff6b6b; --north:#4ea1ff; --south:#ffb454; --chip:#222734;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.55;font-size:15px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,kbd{font-family:var(--mono);font-size:.86em}
+  .wrap{display:grid;grid-template-columns:248px 1fr;max-width:1320px;margin:0 auto}
+  /* nav */
+  nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;
+    border-right:1px solid var(--line);padding:22px 18px;background:#0c0e12}
+  nav h1{font-size:14px;letter-spacing:.02em;margin:0 0 4px}
+  nav .sub{color:var(--muted);font-size:12px;margin-bottom:18px}
+  nav a{display:block;color:var(--muted);padding:6px 10px;border-radius:7px;font-size:13.5px}
+  nav a:hover{background:var(--panel2);color:var(--ink);text-decoration:none}
+  nav .navsec{margin-top:14px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+    color:#5b6678;padding:0 10px}
+  main{padding:34px 40px 90px;min-width:0}
+  header.hero{border:1px solid var(--line);border-radius:16px;padding:26px 28px;
+    background:linear-gradient(135deg,#171a21,#13161d);margin-bottom:26px}
+  .hero h1{margin:0 0 6px;font-size:25px}
+  .hero p{margin:0;color:var(--muted)}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .chip{background:var(--chip);border:1px solid var(--line);color:var(--ink);
+    padding:4px 10px;border-radius:999px;font-size:12px}
+  .chip b{color:var(--accent)}
+  section{margin:38px 0;scroll-margin-top:18px}
+  h2{font-size:20px;border-bottom:1px solid var(--line);padding-bottom:8px;margin:0 0 16px}
+  h3{font-size:15.5px;margin:22px 0 8px}
+  p{margin:10px 0}
+  .lead{color:var(--muted)}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h4{margin:0 0 6px;font-size:14.5px}
+  .card .path{font-family:var(--mono);font-size:11.5px;color:var(--accent);word-break:break-all}
+  .card p{margin:8px 0 0;color:var(--muted);font-size:13.5px}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:999px;
+    border:1px solid var(--line);color:var(--muted);margin-right:5px}
+  .tag.north{color:var(--north);border-color:#264a73}
+  .tag.south{color:var(--south);border-color:#6b5326}
+  .tag.core{color:var(--accent2);border-color:#3c2f6b}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--ink);font-weight:600}
+  td code{color:#cdd6e6}
+  .callout{border-radius:10px;padding:13px 16px;margin:12px 0;border:1px solid var(--line);
+    background:var(--panel)}
+  .callout.risk{border-left:4px solid var(--risk)}
+  .callout.warn{border-left:4px solid var(--warn)}
+  .callout.ok{border-left:4px solid var(--ok)}
+  .callout.dec{border-left:4px solid var(--accent2)}
+  .callout .h{font-weight:700;font-size:13px;letter-spacing:.02em;margin-bottom:4px}
+  .callout.risk .h{color:var(--risk)} .callout.warn .h{color:var(--warn)}
+  .callout.ok .h{color:var(--ok)} .callout.dec .h{color:var(--accent2)}
+  .sev{font-size:10.5px;border-radius:5px;padding:1px 7px;margin-left:8px;font-weight:600}
+  .sev.med{background:#3a2f12;color:var(--warn)} .sev.low{background:#10301f;color:var(--ok)}
+  .sev.high{background:#3a1414;color:var(--risk)}
+  .fact{color:var(--ok);font-weight:600} .assume{color:var(--warn);font-weight:600}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:6px 14px;margin:10px 0}
+  summary{cursor:pointer;padding:8px 0;font-weight:600;font-size:13.5px}
+  details pre{background:#0c0e12;border:1px solid var(--line);border-radius:8px;
+    padding:12px;overflow:auto;font-family:var(--mono);font-size:12px;color:#cdd6e6}
+  pre.inline{background:#0c0e12;border:1px solid var(--line);border-radius:8px;
+    padding:12px;overflow:auto;font-family:var(--mono);font-size:12px;color:#cdd6e6}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:6px 0 12px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .svgwrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto}
+  ol.steps{padding-left:0;list-style:none;counter-reset:s}
+  ol.steps li{counter-increment:s;position:relative;padding:10px 0 10px 42px;border-bottom:1px solid var(--line)}
+  ol.steps li:last-child{border-bottom:0}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:26px;height:26px;
+    border-radius:50%;background:var(--accent2);color:#fff;font-size:13px;font-weight:700;
+    display:flex;align-items:center;justify-content:center}
+  .small{font-size:12.5px;color:var(--muted)}
+  .pillrow{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+  .footer{color:#5b6678;font-size:12px;border-top:1px solid var(--line);margin-top:40px;padding-top:16px}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:22px}.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <h1>Architecture Review</h1>
+  <div class="sub">SBCO BACnet B-BC<br>Simulator / Gateway</div>
+  <a href="#summary">Executive Summary</a>
+  <a href="#context">System Context</a>
+  <a href="#arch">Architecture</a>
+  <a href="#components">Components</a>
+  <a href="#flow">Data &amp; Control Flow</a>
+  <a href="#decisions">Key Decisions (ADRs)</a>
+  <a href="#invariants">Invariants</a>
+  <a href="#risks">Risks &amp; Gaps</a>
+  <a href="#next">Next Steps</a>
+  <a href="#evidence">Evidence &amp; Traceability</a>
+  <div class="navsec">Status</div>
+  <div style="padding:6px 10px">
+    <span class="chip"><b>120</b>&nbsp;tests pass</span>
+  </div>
+</nav>
+
+<main>
+<header class="hero">
+  <h1>SBCO BACnet B-BC Simulator / Gateway</h1>
+  <p>実設備なしで、SBCO 標準ポイントリスト 1 つから標準準拠の仮想 B-BC を BACnet/IP（北向き）で公開し、
+     南向き（MQTT/ZeroMQ/WoT/gRPC）データ源を BACnet 化して上位（Hono → Building OS）へ供給する。</p>
+  <div class="meta">
+    <span class="chip">Python <b>3.12</b> · uv</span>
+    <span class="chip">BACnet lib <b>bacpypes3</b></span>
+    <span class="chip">concurrency <b>single-loop asyncio</b></span>
+    <span class="chip">~<b>2,800</b> LOC src</span>
+    <span class="chip"><b>16</b> test files · <b>120</b> passing</span>
+    <span class="chip">ruff + mypy <b>clean</b></span>
+    <span class="chip">MVP-1/2 done · MVP-3 partial</span>
+  </div>
+</header>
+
+<!-- ===================== SUMMARY ===================== -->
+<section id="summary">
+  <h2>Executive Summary</h2>
+  <p class="lead">本リポジトリは設計ドキュメント群から出発し、6 エピック（EP-001〜006）を TDD ＋
+   エピック単位レビューで実装し、全て <code>main</code> にマージ済み。MVP-1/MVP-2 を完成、MVP-3 は
+   成果物出力を中心に partial で着地している。</p>
+  <div class="grid g3">
+    <div class="card"><h4>何を作ったか</h4><p>SBCO CSV → YAML 中間モデル → bacpypes3 オブジェクト →
+      BACnet/IP 公開。Simulator / Gateway / Combined の 3 動作モード、南向きバインディング、
+      値生成・フォールト注入、COV、REST 制御面、意味タグ、標準成果物エクスポートまで。</p></div>
+    <div class="card"><h4>なぜ重要か</h4><p>実 B-BC は開発初期に存在せず・調達高・CI に乗らない・異常系再現が困難。
+      本製品はその代替＋プロトコル変換ハブとして、接続ゲートウェイ／Building OS の結合試験を
+      CI まで含めて成立させる。</p></div>
+    <div class="card"><h4>現在地</h4><p><span class="fact">完了:</span> 北向き全サービス・南向き抽象＋MQTT/ZeroMQ・
+      シミュレーション・上位連携(BBMD/FDR)・意味タグ・エクスポート。
+      <span class="assume">将来:</span> BACnet/SC・WoT南向き・将来オブジェクト（issue #28/#30/#31）。</p></div>
+  </div>
+  <div class="callout ok"><div class="h">健全性</div>
+    ループバック統合テストで BACnet/IP プロトコル往復（Who-Is/Read/RPM/Write/COV）を実機の bacpypes3
+    スタック上で検証。CI は外部ブローカ不要の in-repo フェイクで無人グリーン、実ブローカは
+    <code>integration</code> ジョブに分離。</div>
+</section>
+
+<!-- ===================== CONTEXT ===================== -->
+<section id="context">
+  <h2>System Context</h2>
+  <p class="lead">北向きは常に BACnet/IP。上位系（Building OS）は接続ゲートウェイ（Eclipse Hono 等）経由で
+   取り込む。製品は上位へ直結しない（<a href="#decisions">ADR-005</a>）。</p>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--north)"></span>Northbound = BACnet/IP（出力・常時）</span>
+    <span><span class="dot" style="background:var(--south)"></span>Southbound = binding（入力・Gateway時）</span>
+    <span><span class="dot" style="background:var(--accent2)"></span>本製品スコープ</span>
+  </div>
+  <div class="svgwrap">
+  <svg viewBox="0 0 980 250" width="100%" height="250" role="img" aria-label="System context diagram">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#9aa3b2"/></marker>
+      <marker id="arN" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#4ea1ff"/></marker>
+      <marker id="arS" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#ffb454"/></marker>
+    </defs>
+    <!-- field side -->
+    <rect x="14" y="150" width="170" height="70" rx="10" fill="#1e222b" stroke="#6b5326"/>
+    <text x="99" y="180" fill="#e6e9ef" font-size="13" text-anchor="middle">フィールド側データ源</text>
+    <text x="99" y="199" fill="#9aa3b2" font-size="11" text-anchor="middle">MQTT / ZeroMQ / WoT / gRPC</text>
+    <!-- product -->
+    <rect x="360" y="40" width="260" height="170" rx="14" fill="#16213a" stroke="#7c5cff" stroke-width="2"/>
+    <text x="490" y="70" fill="#cdb8ff" font-size="14" text-anchor="middle" font-weight="bold">bbc-sim（本製品）</text>
+    <text x="490" y="92" fill="#9aa3b2" font-size="11" text-anchor="middle">仮想 B-BC / プロトコル変換ハブ</text>
+    <rect x="384" y="108" width="212" height="34" rx="8" fill="#171a21" stroke="#2a2f3a"/>
+    <text x="490" y="130" fill="#e6e9ef" font-size="11.5" text-anchor="middle">SBCO→YAML→Core Object Model</text>
+    <rect x="384" y="150" width="212" height="34" rx="8" fill="#171a21" stroke="#2a2f3a"/>
+    <text x="490" y="172" fill="#e6e9ef" font-size="11.5" text-anchor="middle">Sim / Gateway / Combined</text>
+    <!-- connector -->
+    <rect x="700" y="40" width="150" height="60" rx="10" fill="#1e222b" stroke="#264a73"/>
+    <text x="775" y="66" fill="#e6e9ef" font-size="12.5" text-anchor="middle">接続ゲートウェイ</text>
+    <text x="775" y="84" fill="#9aa3b2" font-size="11" text-anchor="middle">Hono / BACnet コネクタ</text>
+    <!-- building os -->
+    <rect x="700" y="150" width="150" height="60" rx="10" fill="#1e222b" stroke="#2a2f3a"/>
+    <text x="775" y="176" fill="#e6e9ef" font-size="12.5" text-anchor="middle">Building OS</text>
+    <text x="775" y="194" fill="#9aa3b2" font-size="11" text-anchor="middle">Ditto / BAS / BEMS</text>
+    <!-- YABE -->
+    <rect x="360" y="40" width="0" height="0"/>
+    <!-- arrows -->
+    <line x1="184" y1="178" x2="356" y2="150" stroke="#ffb454" stroke-width="2" marker-end="url(#arS)"/>
+    <text x="250" y="150" fill="#ffb454" font-size="10.5">southbound</text>
+    <line x1="620" y1="80" x2="696" y2="72" stroke="#4ea1ff" stroke-width="2" marker-end="url(#arN)"/>
+    <text x="612" y="56" fill="#4ea1ff" font-size="10.5">BACnet/IP ▶</text>
+    <line x1="775" y1="100" x2="775" y2="146" stroke="#9aa3b2" stroke-width="1.6" marker-end="url(#ar)"/>
+    <text x="60" y="30" fill="#9aa3b2" font-size="11">YABE / CI テスタも北向き BACnet を直接探索可能</text>
+    <line x1="360" y1="60" x2="360" y2="60"/>
+  </svg>
+  </div>
+</section>
+
+<!-- ===================== ARCHITECTURE ===================== -->
+<section id="arch">
+  <h2>Architecture &amp; Pipeline</h2>
+  <p class="lead">全モードが <b>YAML 由来の単一オブジェクトモデル</b>を共有（<a href="#decisions">ADR-004</a>）。
+    並行性は <b>single-loop asyncio</b>（ADR-010）で、Core Object Model は event loop に閉じ込める。</p>
+  <div class="svgwrap">
+  <svg viewBox="0 0 980 430" width="100%" height="430" role="img" aria-label="Architecture and pipeline">
+    <defs>
+      <marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0,0 L9,4.5 L0,9 z" fill="#9aa3b2"/></marker>
+    </defs>
+    <!-- pipeline top -->
+    <g font-size="11.5" text-anchor="middle">
+      <rect x="20" y="24" width="130" height="44" rx="8" fill="#1e222b" stroke="#2a2f3a"/>
+      <text x="85" y="44" fill="#e6e9ef">SBCO CSV/XLSX</text>
+      <text x="85" y="60" fill="#9aa3b2" font-size="10">入力（唯一）</text>
+      <line x1="150" y1="46" x2="186" y2="46" stroke="#9aa3b2" marker-end="url(#b)"/>
+      <rect x="188" y="24" width="140" height="44" rx="8" fill="#1e222b" stroke="#2a2f3a"/>
+      <text x="258" y="44" fill="#e6e9ef">yaml_generator</text>
+      <text x="258" y="60" fill="#9aa3b2" font-size="10">validate/map/infer/採番</text>
+      <line x1="328" y1="46" x2="364" y2="46" stroke="#9aa3b2" marker-end="url(#b)"/>
+      <rect x="366" y="24" width="120" height="44" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+      <text x="426" y="44" fill="#e6e9ef">simulator.yaml</text>
+      <text x="426" y="60" fill="#9aa3b2" font-size="10">中間モデル</text>
+      <line x1="486" y1="46" x2="522" y2="46" stroke="#9aa3b2" marker-end="url(#b)"/>
+      <rect x="524" y="24" width="140" height="44" rx="8" fill="#1e222b" stroke="#2a2f3a"/>
+      <text x="594" y="44" fill="#e6e9ef">bacnet_objects</text>
+      <text x="594" y="60" fill="#9aa3b2" font-size="10">Device + AI/BI/MI…</text>
+      <line x1="664" y1="46" x2="700" y2="46" stroke="#9aa3b2" marker-end="url(#b)"/>
+      <rect x="702" y="24" width="150" height="44" rx="8" fill="#16213a" stroke="#4ea1ff"/>
+      <text x="777" y="44" fill="#cdd6e6">BACnet/IP 北向き</text>
+      <text x="777" y="60" fill="#9aa3b2" font-size="10">UDP 47808</text>
+    </g>
+    <!-- runtime box -->
+    <rect x="20" y="100" width="832" height="300" rx="14" fill="#13161d" stroke="#2a2f3a"/>
+    <text x="36" y="124" fill="#9aa3b2" font-size="11">simulator_runtime · single event loop（ADR-010）</text>
+
+    <!-- northbound adapter -->
+    <rect x="40" y="140" width="792" height="52" rx="10" fill="#16213a" stroke="#264a73"/>
+    <text x="436" y="161" fill="#4ea1ff" font-size="12.5" text-anchor="middle" font-weight="bold">Northbound Adapter — BBCApplication (BACnet/IP)</text>
+    <text x="436" y="180" fill="#9aa3b2" font-size="11" text-anchor="middle">Who-Is/I-Am · ReadProperty · RPM · WriteProperty(+M, writable のみ) · SubscribeCOV/Notify</text>
+
+    <!-- core -->
+    <rect x="300" y="208" width="272" height="60" rx="10" fill="#1b1830" stroke="#7c5cff"/>
+    <text x="436" y="230" fill="#cdb8ff" font-size="12.5" text-anchor="middle" font-weight="bold">Core Object Model（全モード共有）</text>
+    <text x="436" y="249" fill="#9aa3b2" font-size="11" text-anchor="middle">presentValue / statusFlags / tags … event loop 閉じ込め</text>
+
+    <!-- value source -->
+    <rect x="40" y="292" width="360" height="92" rx="10" fill="#1e222b" stroke="#2a2f3a"/>
+    <text x="220" y="313" fill="#e6e9ef" font-size="12.5" text-anchor="middle">Value Source — simulation/</text>
+    <text x="220" y="332" fill="#9aa3b2" font-size="10.5" text-anchor="middle">generators (random_walk/sin/replay/scenario)</text>
+    <text x="220" y="349" fill="#9aa3b2" font-size="10.5" text-anchor="middle">engine (tick) · fault injection</text>
+    <text x="220" y="368" fill="#9aa3b2" font-size="10.5" text-anchor="middle">REST 制御面 (rest/) で実行時シナリオ変更</text>
+
+    <!-- southbound -->
+    <rect x="472" y="292" width="360" height="92" rx="10" fill="#1e222b" stroke="#6b5326"/>
+    <text x="652" y="313" fill="#ffb454" font-size="12.5" text-anchor="middle">Southbound Adapter — southbound/</text>
+    <text x="652" y="332" fill="#9aa3b2" font-size="10.5" text-anchor="middle">Transport 抽象 (ADR-013): InMemory / MQTT / ZeroMQ</text>
+    <text x="652" y="349" fill="#9aa3b2" font-size="10.5" text-anchor="middle">binding: telemetry→PV / command→publish</text>
+    <text x="652" y="368" fill="#9aa3b2" font-size="10.5" text-anchor="middle">address: local_id 優先 · value mapping</text>
+
+    <!-- arrows core<->adapters -->
+    <line x1="436" y1="192" x2="436" y2="206" stroke="#9aa3b2" stroke-width="1.5" marker-end="url(#b)"/>
+    <line x1="436" y1="268" x2="436" y2="208" stroke="#9aa3b2" stroke-width="1.5" marker-end="url(#b)"/>
+    <line x1="300" y1="245" x2="240" y2="292" stroke="#39d98a" stroke-width="1.6" marker-end="url(#b)"/>
+    <text x="244" y="282" fill="#39d98a" font-size="10">simulate→Core</text>
+    <line x1="572" y1="245" x2="636" y2="292" stroke="#ffb454" stroke-width="1.6" marker-end="url(#b)"/>
+    <text x="588" y="282" fill="#ffb454" font-size="10">telemetry→Core</text>
+    <line x1="636" y1="292" x2="572" y2="250" stroke="#9aa3b2" stroke-width="1.2" marker-end="url(#b)"/>
+  </svg>
+  </div>
+  <p class="small">Northbound Adapter は値の出所を意識せず Core のみ参照。値更新経路は
+   <code>simulate→Core</code> または <code>southbound telemetry→Core</code>。command 経路は
+   <code>北 WriteProperty→Core→（writable かつ binding あれば）southbound 送出</code>。</p>
+</section>
+
+<!-- ===================== COMPONENTS ===================== -->
+<section id="components">
+  <h2>Major Components &amp; Responsibilities</h2>
+  <div class="grid g2">
+    <div class="card"><span class="tag core">core</span>
+      <h4>yaml_generator</h4>
+      <div class="path">src/bbc_sim/yaml_generator/</div>
+      <p>SBCO CSV 読込・必須列/一意性検証（<code>pointlist</code>）、object type 推定＋BACnet列優先・単位変換
+        （<code>mapping</code>,<code>units</code>）、aggregated 集約＋型別 instance 再採番（<code>generator</code>）、
+        simulator.yaml の (de)serialize/validate（<code>yaml_io</code>）。</p></div>
+    <div class="card"><span class="tag north">north</span>
+      <h4>bacnet_objects</h4>
+      <div class="path">src/bbc_sim/bacnet_objects/builder.py</div>
+      <p>YAML から bacpypes3 ローカルオブジェクトを生成。Device + Analog/Binary/Multi-state に
+        型別必須プロパティ（units/min/max/resolution/covIncrement・activeText・stateText 等）と
+        NetworkPort（BBMD/FDR 設定含む）を付与。</p></div>
+    <div class="card"><span class="tag core">runtime</span>
+      <h4>simulator_runtime</h4>
+      <div class="path">src/bbc_sim/simulator_runtime/{runtime,app}.py</div>
+      <p><code>Runtime</code> がサーバ＋エンジン＋南向き＋REST を単一ループで束ねる。<code>BBCApplication</code>
+        は writable 強制（Input は WriteProperty 拒否）と command フックを実装。</p></div>
+    <div class="card"><span class="tag north">north</span>
+      <h4>services (client)</h4>
+      <div class="path">src/bbc_sim/services/client.py</div>
+      <p>Who-Is / Read / RPM / Write / WPM / SubscribeCOV のクライアントヘルパと CLI。疎通確認・テスト・
+        Hono 風コネクタの代理に使用。</p></div>
+    <div class="card"><span class="tag south">south</span>
+      <h4>southbound</h4>
+      <div class="path">src/bbc_sim/southbound/</div>
+      <p>プロトコル非依存 <code>Transport</code> 抽象（ADR-013）＋ InMemory/MQTT/ZeroMQ 実装、
+        <code>binding</code>（telemetry↔command 配線）、<code>address</code>（local_id 優先）、
+        <code>mapping</code>（型別 scale/offset/enum）、<code>factory</code>（URI→Transport）。</p></div>
+    <div class="card"><span class="tag core">sim</span>
+      <h4>simulation</h4>
+      <div class="path">src/bbc_sim/simulation/</div>
+      <p>決定的値生成器（<code>generators</code>）、フォールト注入（<code>fault</code>: 通信断/凍結/異常値/
+        OoS/Fault）、単一ループ駆動エンジン（<code>engine</code>、フォールト抑制対応）。</p></div>
+    <div class="card"><span class="tag core">ctl</span>
+      <h4>rest</h4>
+      <div class="path">src/bbc_sim/rest/api.py</div>
+      <p>FastAPI 制御面（localhost）: devices/objects 参照、present-value 書込、
+        <code>POST /simulation/scenario</code> でシナリオ変更・フォールト注入。</p></div>
+    <div class="card"><span class="tag south">semantic</span>
+      <h4>semantic / export</h4>
+      <div class="path">src/bbc_sim/{semantic/brick,export/artifacts}.py</div>
+      <p>device_type/point_type の Brick クラスから決定的に Haystack タグ生成（ADR-012）。
+        EDE / IEIEJ / PICS / Brick-JSON-LD / WoT-TD のエクスポート（<code>bbc-sim export</code>）。</p></div>
+  </div>
+</section>
+
+<!-- ===================== FLOW ===================== -->
+<section id="flow">
+  <h2>Data &amp; Control Flow</h2>
+  <div class="grid g2">
+    <div>
+      <h3>Telemetry（南 → 北）<span class="tag south">gateway/combined</span></h3>
+      <ol class="steps">
+        <li>Transport がチャネル受信（<code>address</code>: local_id 優先で導出）</li>
+        <li><code>mapping.telemetry_to_present_value</code> で型別正規化（scale/offset/enum）</li>
+        <li>Core の <code>presentValue</code> を更新（event loop 上）</li>
+        <li>北向き ReadProperty / COV Notify で上位が取得</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Command（北 → 南）<span class="tag north">writable のみ</span></h3>
+      <ol class="steps">
+        <li>北向き WriteProperty 受信（<code>BBCApplication</code>）</li>
+        <li>writable 検査 — Input は <code>writeAccessDenied</code> で拒否</li>
+        <li>成功時 command フック発火（command-bound オブジェクトのみ）</li>
+        <li><code>mapping.present_value_to_command</code> → Transport へ publish</li>
+      </ol>
+    </div>
+  </div>
+  <div class="callout ok"><div class="h">論理一致（AC-13 / PR-NF-017）</div>
+    同一オブジェクトの南向き入力値と北向き presentValue が論理一致することを、実オブジェクトモデル上の
+    ループバックテストで検証済み。</div>
+</section>
+
+<!-- ===================== DECISIONS ===================== -->
+<section id="decisions">
+  <h2>Key Design Decisions (ADRs)</h2>
+  <p class="lead">設計判断の正は <code>docs/adr/</code>。特に方向性と並行性の 2 点は全体を貫く前提。</p>
+  <table>
+    <thead><tr><th style="width:88px">ADR</th><th>決定</th><th style="width:160px">影響</th></tr></thead>
+    <tbody>
+      <tr><td>ADR-001</td><td>SBCO ポイントリストを唯一の入力ソースに</td><td>入力境界の単純化</td></tr>
+      <tr><td>ADR-003</td><td><code>gateway_id ≠ bbc_id</code>（混同禁止）</td><td>識別子の安全性</td></tr>
+      <tr><td>ADR-004</td><td>YAML を中間モデルとし全モードで共有</td><td>モード間整合</td></tr>
+      <tr><td><b>ADR-005</b></td><td><b>北向き=BACnet/IP、南向き=binding</b>（v1.2 訂正）</td><td>方向の正</td></tr>
+      <tr><td>ADR-007</td><td>object type を BACnet 列優先＋推定（警告付き）</td><td>マッピング規則</td></tr>
+      <tr><td>ADR-008</td><td>Raspberry Pi ネイティブ実行を一級・Docker 任意</td><td>配布</td></tr>
+      <tr><td>ADR-009</td><td>BACnet ライブラリを bacpypes3 に一本化</td><td>技術選定</td></tr>
+      <tr><td><b>ADR-010</b></td><td><b>single-loop asyncio</b>・Core を loop 閉じ込め</td><td>並行性の正</td></tr>
+      <tr><td>ADR-011</td><td>device-mapping mode（aggregated/multi/auto）。runtime mode と直交</td><td>用語/採番</td></tr>
+      <tr><td>ADR-012</td><td>device_type=Brick クラス採用、タグは Brick 由来。SBCO tags 列は検索タグで別物</td><td>意味付け</td></tr>
+      <tr><td><b>ADR-013</b></td><td><b>南向き Transport 抽象</b>（InMemory/MQTT/ZeroMQ）</td><td>プロトコル拡張性</td></tr>
+    </tbody>
+  </table>
+  <div class="callout dec"><div class="h">2 つの "mode" 軸を混同しない</div>
+    <b>runtime mode</b>（値の出所: simulator/gateway/combined）と <b>device-mapping mode</b>
+    （SBCO device→BACnet device 写像: aggregated/multi-device/auto-partition）は直交。
+    MVP-1 は aggregated（1 Virtual B-BC に集約）。</div>
+</section>
+
+<!-- ===================== INVARIANTS ===================== -->
+<section id="invariants">
+  <h2>Non-negotiable Invariants（コードで担保）</h2>
+  <div class="grid g2">
+    <div class="callout ok"><div class="h">北向き = BACnet/IP のみ</div>
+      南向きは決して出力にしない。<code>network.type=bacnet-ip</code> 固定、MQTT 等は入力源。<span class="small">検証: 全suite・方向定義 ADR-005</span></div>
+    <div class="callout ok"><div class="h">gateway_id ≠ bbc_id</div>
+      bbc_id/device_id は CLI 引数由来。gateway_id は metadata のみ。<span class="small">検証: <code>test_generator.py</code></span></div>
+    <div class="callout ok"><div class="h">1 ランタイム = 1 Virtual B-BC</div>
+      aggregated で全点を 1 Device に集約。<span class="small">検証: <code>test_generator.py</code></span></div>
+    <div class="callout ok"><div class="h">SBCO のみ入力 / YAML が中間</div>
+      入力は SBCO 1 種、全モードが simulator.yaml を共有。<span class="small">検証: pipeline 全体</span></div>
+  </div>
+</section>
+
+<!-- ===================== RISKS ===================== -->
+<section id="risks">
+  <h2>Risks &amp; Gaps</h2>
+
+  <div class="callout risk"><div class="h">bacpypes3 0.0.106: WPM エラー応答が IP で伝送できない<span class="sev med">MEDIUM</span></div>
+    WritePropertyMultiple の<em>成功</em>は往復するが、<code>WritePropertyMultipleError</code>（write-access-denied 等）の
+    応答 PDU を IP データリンクが送出できずクライアントがタイムアウトする<b>ライブラリ側の不具合</b>。
+    <br><span class="fact">対応:</span> WPM の writable 強制は<b>ハンドラレベル</b>で検証（正しいエラー型を raise）。単発 WriteProperty の
+    エラーは正常に伝送。<span class="small">記録: <code>docs/memory/pitfalls.md</code></span></div>
+
+  <div class="callout warn"><div class="h">REST 制御面に認証なし<span class="sev low">LOW</span></div>
+    <code>127.0.0.1</code> バインドの運用/テスト用サイドチャネル。present-value 書込・フォールト注入が可能。
+    リモート公開する場合は認証が必要。北向きは BACnet/IP のみで影響は局所。</div>
+
+  <div class="callout warn"><div class="h">Brick→Haystack seed テーブルは暫定<span class="sev low">LOW</span></div>
+    決定的だが網羅は限定的。確定版マッピング CSV 待ち（ADR-012 の open ❓）。name:value タグ
+    （<code>unit:"°C"</code> 等）は未対応（marker のみ）。</div>
+
+  <div class="callout warn"><div class="h">外部システム連携は手動 AC<span class="sev med">MEDIUM</span></div>
+    Hono / Ditto / Building OS の実到達（AC-7/8）、実 BBMD を挟む異サブネット探索（AC-10）、ARM 実機起動、
+    YABE GUI 疎通は<b>自動化対象外</b>。CI/loopback では「BACnet クライアントが全オブジェクト探索・読取」で
+    取り込み可能性を代理確認。<span class="small">記録: README "Manual acceptance"</span></div>
+
+  <div class="callout risk"><div class="h">MVP-3 未実装（将来）— issue #28/#30/#31 を OPEN 維持<span class="sev med">SCOPE</span></div>
+    BACnet/SC・BTL 適合支援（#31）、WoT <em>南向き</em>バインディング（#30）、将来オブジェクト
+    Schedule/TrendLog/Calendar/NotificationClass/Accumulator（#28）、QUDT/full-REC エクスポートは未実装。
+    成果物エクスポート（EDE/IEIEJ/PICS/JSON-LD/WoT-TD）は実装済み。</div>
+
+  <div class="callout warn"><div class="h">テスト環境の留意点<span class="sev low">LOW</span></div>
+    bacpypes3 オブジェクト構築には実行中の event loop が必要（sync テストは conftest の autouse fixture で供給）。
+    実ブローカ統合は <code>@pytest.mark.integration</code> で既定スキップ。</div>
+</section>
+
+<!-- ===================== NEXT ===================== -->
+<section id="next">
+  <h2>Recommended Next Steps</h2>
+  <table>
+    <thead><tr><th style="width:46px">#</th><th>アクション</th><th style="width:130px">区分</th><th style="width:150px">根拠</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>実 Mosquitto ＋ <code>docker-compose.integration.yml</code> で Gateway 経路を手動検証し、結果を記録</td><td>結合検証</td><td>EP-004 manual AC</td></tr>
+      <tr><td>2</td><td>ARM(Raspberry Pi) 実機で <code>uv run bbc-sim run</code> と YABE 疎通を確認</td><td>結合検証</td><td>ADR-008 / #9 manual</td></tr>
+      <tr><td>3</td><td>device-mapping <b>multi-device</b>（MVP-2 残）と BBMD 同マイルストーンの実装</td><td>機能</td><td>ADR-011 / EP-004</td></tr>
+      <tr><td>4</td><td>Brick→Haystack seed の確定版 CSV 化＋ name:value タグ対応</td><td>機能</td><td>ADR-012 open ❓</td></tr>
+      <tr><td>5</td><td>WoT 南向き Transport を ADR-013 抽象に追加（#30）</td><td>拡張</td><td>EP-006 future</td></tr>
+      <tr><td>6</td><td>BACnet/SC・将来オブジェクト・QUDT/REC（#28/#31）— ライブラリ前提を調査</td><td>将来</td><td>EP-006 future</td></tr>
+      <tr><td>7</td><td>bacpypes3 の WPM エラー伝送不具合を upstream へ報告 / 版更新を追跡</td><td>保守</td><td>pitfalls.md</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ===================== EVIDENCE ===================== -->
+<section id="evidence">
+  <h2>Evidence &amp; Traceability</h2>
+  <p class="lead"><span class="fact">事実</span>＝コード/テストで確認、<span class="assume">仮定/未確認</span>＝手動 or 将来。</p>
+  <details>
+    <summary>レイヤ文書（読む順）</summary>
+    <pre>AGENTS.md
+docs/vision/vision.md            なぜ作るか
+docs/memory/{architecture,decisions,pitfalls,bacnet-domain}.md
+docs/adr/ADR-001..013            設計判断の正
+docs/backlog/{PRD-v1.5.md,epic/EP-001..006}
+docs/specs/*.md                  振る舞いの正
+docs/development-workflow.md     プロセス（TDD/1エピック=1PR/レビューゲート）</pre>
+  </details>
+  <details>
+    <summary>実装ソース（src/bbc_sim/）と対応エピック</summary>
+    <pre>EP-001  yaml_generator/ · bacnet_objects/ · simulator_runtime/{app} · services/client · cli
+EP-002  southbound/{transport,binding,address,mapping,factory,mqtt,zeromq} · models(modes)
+EP-003  simulation/{generators,fault,engine} · rest/api · simulator_runtime/runtime
+EP-004  bacnet_objects/builder(BBMD/FDR) · docker/docker-compose.integration.yml · CI
+EP-005  semantic/brick · generator(tags/search_tags) · builder(ArrayOfNameValue)
+EP-006  export/{artifacts,cli}</pre>
+  </details>
+  <details>
+    <summary>検証（CLI 一巡 — quickstart）</summary>
+    <pre>uv sync --extra dev
+uv run bbc-sim generate-yaml -i tests/fixtures/sample_pointlist.csv -o config/simulator.yaml
+uv run bbc-sim validate -c config/simulator.yaml
+uv run bbc-sim run -c config/simulator.yaml            # BACnet/IP 北向き
+uv run bbc-sim whois -t 127.0.0.1:47808
+uv run bbc-sim export -f pics -c config/simulator.yaml
+uv run pytest        # 120 passed, 1 deselected (integration)
+uv run ruff check && uv run mypy   # clean</pre>
+  </details>
+  <details>
+    <summary>未確認 / 範囲外（明示）</summary>
+    <pre>[assume] 実 Hono / Ditto / Building OS への E2E 到達（AC-7/8）— mock/manual
+[assume] 実 BBMD を挟む異サブネット探索（AC-10）— 設定は実装・unit 済、実機は manual
+[assume] ARM 実機起動・YABE GUI 疎通 — manual
+[future] BACnet/SC, BTL, WoT southbound, 将来オブジェクト, QUDT/full-REC（#28/#30/#31）</pre>
+  </details>
+</section>
+
+<div class="footer">
+  生成: bbc-sim architecture review · 対象 <code>main</code> @ 0eb9f94 · 自己完結 HTML（外部依存なし）。
+  本書はレビュー支援用の概観であり、正は各 ADR / Spec / コードを参照。
+</div>
+</main>
+</div>
+</body>
+</html>
