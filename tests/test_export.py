@@ -84,7 +84,8 @@ def test_export_unknown_format_raises(config):
 
 def test_export_cli_writes_file(sample_pointlist, tmp_path):
     sim = tmp_path / "sim.yaml"
-    runner.invoke(app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(sim)])
+    gen = runner.invoke(app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(sim)])
+    assert gen.exit_code == 0, gen.output
     out = tmp_path / "out.jsonld"
     result = runner.invoke(app, ["export", "-f", "jsonld", "-c", str(sim), "-o", str(out)])
     assert result.exit_code == 0, result.output
@@ -94,6 +95,7 @@ def test_export_cli_writes_file(sample_pointlist, tmp_path):
 
 def test_export_cli_rejects_bad_format(sample_pointlist, tmp_path):
     sim = tmp_path / "sim.yaml"
-    runner.invoke(app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(sim)])
+    gen = runner.invoke(app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(sim)])
+    assert gen.exit_code == 0, gen.output
     result = runner.invoke(app, ["export", "-f", "nope", "-c", str(sim)])
     assert result.exit_code == 1
