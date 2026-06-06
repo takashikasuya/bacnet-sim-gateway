@@ -19,6 +19,7 @@ from bbc_sim.models import (
     SimulatorConfig,
     UpdateConfig,
 )
+from bbc_sim.semantic.brick import derive_tags, has_mapping
 from bbc_sim.yaml_generator.mapping import resolve_object_type
 from bbc_sim.yaml_generator.units import to_bacnet_units
 
@@ -115,6 +116,15 @@ def generate_config(
         elif ot.is_multistate:
             state_text = list(p.labels)
 
+        # Brick-derived BACnet semantic tags (ADR-012). search_tags is the SBCO `tags`
+        # column kept verbatim (a different concept).
+        tags = derive_tags(p.device_type, p.point_type)
+        if not has_mapping(p.device_type, p.point_type):
+            warnings.append(
+                f"{p.point_id}: no Brick seed mapping for device_type="
+                f"{p.device_type!r}/point_type={p.point_type!r}; tags limited to base"
+            )
+
         objects.append(
             BacnetObjectSpec(
                 point_id=p.point_id,
@@ -132,15 +142,18 @@ def generate_config(
                 writable=p.writable,
                 description=p.description,
                 update=UpdateConfig(interval=p.interval),
+                tags=tags,
                 metadata={
                     "gateway_id": p.gateway_id,
                     "device_id": p.device_id,
                     "device_name": p.device_name,
                     "device_type": p.device_type,
+                    "point_type": p.point_type,
                     "building": p.building,
                     "floor": p.floor,
                     "installation_area": p.installation_area,
                     "local_id": p.local_id,
+                    "search_tags": list(p.tags),  # SBCO `tags` column, verbatim
                 },
             )
         )

@@ -197,6 +197,7 @@ class BacnetObjectSpec:
     update: UpdateConfig = field(default_factory=UpdateConfig)
     metadata: dict[str, object] = field(default_factory=dict)
     binding: BindingSpec | None = None
+    tags: list[str] = field(default_factory=list)  # BACnet semantic tags (Brick-derived)
 
 
 @dataclass

@@ -104,7 +104,12 @@ def build_object(spec: BacnetObjectSpec) -> Object:
         pv = int(spec.present_value) if spec.present_value else 1
         kwargs["presentValue"] = max(1, min(pv, len(states)))
 
-    return cls(**kwargs)
+    obj = cls(**kwargs)
+    if spec.tags:
+        from bacpypes3.basetypes import NameValue
+
+        obj.tags = [NameValue(name=t) for t in spec.tags]
+    return obj
 
 
 def build_device(bbc: BbcConfig) -> DeviceObject:
