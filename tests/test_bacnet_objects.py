@@ -15,7 +15,7 @@ def _config(path):
 
 def test_build_device(sample_pointlist):
     cfg = _config(sample_pointlist)
-    dev = build_device(cfg.bbc, cfg.network)
+    dev = build_device(cfg.bbc)
     assert str(dev.objectIdentifier[0]) == "device"
     assert dev.objectIdentifier[1] == 1001
     assert dev.objectName == cfg.bbc.object_name

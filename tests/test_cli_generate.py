@@ -45,6 +45,15 @@ def test_validate_point_list_missing_column(tmp_path):
     assert "gateway_id" in result.output
 
 
+def test_generate_yaml_output_is_self_validated(sample_pointlist, tmp_path):
+    # generate-yaml validates its own output; a clean list yields a valid file.
+    out = tmp_path / "simulator.yaml"
+    result = runner.invoke(app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(out)])
+    assert result.exit_code == 0
+    # the generated file passes `validate`
+    assert runner.invoke(app, ["validate", "-c", str(out)]).exit_code == 0
+
+
 def test_inference_emits_warning(sample_pointlist, tmp_path):
     # PT002/PT003/PT005 lack object_type_bacnet -> inference warnings on stderr.
     out = tmp_path / "simulator.yaml"

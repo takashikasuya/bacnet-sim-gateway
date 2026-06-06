@@ -12,7 +12,7 @@ import typer
 
 from bbc_sim.yaml_generator.generator import generate_config
 from bbc_sim.yaml_generator.pointlist import read_point_list, validate_point_list
-from bbc_sim.yaml_generator.yaml_io import dump_config, validate_yaml
+from bbc_sim.yaml_generator.yaml_io import dump_config, validate_config, validate_yaml
 
 app = typer.Typer(help="SBCO BACnet B-BC Simulator / Gateway", no_args_is_help=True)
 
@@ -27,6 +27,8 @@ def generate_yaml(
     """Generate simulator.yaml from an SBCO point list (aggregated, ADR-011)."""
     points = read_point_list(input)
     config, warnings = generate_config(points, bbc_id=bbc_id, device_id=bacnet_device_id)
+    # Validate the generated model before writing so problems surface early.
+    warnings.extend(validate_config(config))
     dump_config(config, output)
     for w in warnings:
         typer.secho(f"warning: {w}", fg=typer.colors.YELLOW, err=True)

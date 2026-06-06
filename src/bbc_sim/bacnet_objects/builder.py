@@ -106,7 +106,7 @@ def build_object(spec: BacnetObjectSpec) -> Object:
     return cls(**kwargs)
 
 
-def build_device(bbc: BbcConfig, network: NetworkConfig | None = None) -> DeviceObject:
+def build_device(bbc: BbcConfig) -> DeviceObject:
     """Build the Device object with required properties (requirements §7)."""
     return DeviceObject(
         objectIdentifier=("device", bbc.device_id),
@@ -132,7 +132,7 @@ def build_network_port(network: NetworkConfig) -> NetworkPortObject:
 def build_object_list(config: SimulatorConfig) -> list[Object]:
     """Build [device, network-port, *objects] for Application.from_object_list."""
     objects: list[Object] = [
-        build_device(config.bbc, config.network),
+        build_device(config.bbc),
         build_network_port(config.network),
     ]
     objects.extend(build_object(spec) for spec in config.objects)

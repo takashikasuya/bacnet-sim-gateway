@@ -39,16 +39,30 @@ def _default_present_value(ot: BacnetObjectType, point: SbcoPoint) -> float | in
 
 def _assign_instances(
     pairs: list[tuple[SbcoPoint, BacnetObjectType]],
-) -> dict[str, int]:
-    """Return point_id -> object_instance, honoring explicit ids per type namespace."""
+) -> tuple[dict[str, int], list[str]]:
+    """Return (point_id -> object_instance, warnings).
+
+    Explicit `instance_no_bacnet` values are honored per object-type namespace. A
+    duplicate explicit value within a type is a point-list error; rather than emit an
+    invalid model we warn and auto-assign the colliding point.
+    """
     used: dict[BacnetObjectType, set[int]] = defaultdict(set)
     result: dict[str, int] = {}
+    warnings: list[str] = []
 
-    # First pass: explicit instance numbers.
+    # First pass: explicit instance numbers (skip duplicates within a type).
     for point, ot in pairs:
-        if point.instance_no_bacnet is not None:
-            used[ot].add(point.instance_no_bacnet)
-            result[point.point_id] = point.instance_no_bacnet
+        if point.instance_no_bacnet is None:
+            continue
+        inst = point.instance_no_bacnet
+        if inst in used[ot]:
+            warnings.append(
+                f"{point.point_id}: explicit instance {ot.value}:{inst} already in use; "
+                "auto-assigning instead"
+            )
+            continue
+        used[ot].add(inst)
+        result[point.point_id] = inst
 
     # Second pass: auto-assign, skipping used numbers within the type.
     counters: dict[BacnetObjectType, int] = defaultdict(lambda: 1)
@@ -61,7 +75,7 @@ def _assign_instances(
         used[ot].add(n)
         counters[ot] = n + 1
         result[point.point_id] = n
-    return result
+    return result, warnings
 
 
 def generate_config(
@@ -83,7 +97,8 @@ def generate_config(
         warnings.extend(w)
         pairs.append((p, ot))
 
-    instances = _assign_instances(pairs)
+    instances, instance_warnings = _assign_instances(pairs)
+    warnings.extend(instance_warnings)
 
     objects: list[BacnetObjectSpec] = []
     for p, ot in pairs:

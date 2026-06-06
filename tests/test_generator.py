@@ -102,3 +102,46 @@ def test_validate_detects_duplicate_instance(config):
 
 def test_validate_clean_config(config):
     assert validate_config(config) == []
+
+
+# ---- edge cases (from review of EP-001) ----
+
+
+def test_empty_point_list_produces_empty_valid_config():
+    cfg, warnings = generate_config([], bbc_id="bbc-local-001", device_id=1001)
+    assert cfg.objects == []
+    assert validate_config(cfg) == []
+
+
+def test_duplicate_explicit_instance_is_resolved_and_warned(tmp_path, sample_pointlist):
+    # Two analog-input rows both claiming instance 1001 -> conflict; generator must
+    # keep the YAML valid (unique instances) and warn.
+    lines = sample_pointlist.read_text(encoding="utf-8").splitlines()
+    header, pt001 = lines[0], lines[1].split(",")
+    clash = pt001.copy()
+    clash[12] = "PT099"  # point_id
+    clash[27] = "1001"   # instance_no_bacnet collides with PT001
+    out = tmp_path / "clash.csv"
+    out.write_text("\n".join([header, lines[1], ",".join(clash)]) + "\n", encoding="utf-8")
+
+    points = read_point_list(out)
+    cfg, warnings = generate_config(points, bbc_id="bbc-local-001", device_id=1001)
+    assert validate_config(cfg) == []  # no duplicate instances in the result
+    assert any("1001" in w and "instance" in w.lower() for w in warnings)
+
+
+def test_multistate_without_labels_is_flagged():
+    from bbc_sim.models import SbcoPoint
+
+    p = SbcoPoint(
+        gateway_id="GW", device_id="D", device_name="d", device_type="t", site="",
+        building="", floor="", installation_area="", target_area="", panel="",
+        point_type="", point_specification="", point_id="P1", point_name="n",
+        writable=True, interval=None, unit="", max_pres_value=None, min_pres_value=None,
+        labels=[], scale=1.0, tags=[], supplier="", owner="", description="",
+        local_id="", device_id_bacnet="", instance_no_bacnet=None,
+        object_type_bacnet="Multi-state-Value",
+    )
+    cfg, _ = generate_config([p], bbc_id="bbc-local-001", device_id=1001)
+    errors = validate_config(cfg)
+    assert any("state_text" in e for e in errors)
