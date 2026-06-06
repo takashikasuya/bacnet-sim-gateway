@@ -7,7 +7,7 @@ The YAML model is the single intermediate shared by all modes (ADR-004).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 # Required input columns (requirements §5).
 REQUIRED_COLUMNS: tuple[str, ...] = (
@@ -34,7 +34,7 @@ class PointListError(Exception):
     """Raised when an SBCO point list cannot be read (structural error)."""
 
 
-class BacnetObjectType(str, Enum):
+class BacnetObjectType(StrEnum):
     """BACnet object types used by this simulator, with ASHRAE 135 enum values."""
 
     analogInput = "analogInput"

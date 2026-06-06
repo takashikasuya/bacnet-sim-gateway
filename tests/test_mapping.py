@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from bbc_sim.models import BacnetObjectType, SbcoPoint
 from bbc_sim.yaml_generator.mapping import resolve_object_type
-from bbc_sim.yaml_generator.units import to_bacnet_units
 from bbc_sim.yaml_generator.pointlist import read_point_list
+from bbc_sim.yaml_generator.units import to_bacnet_units
 
 
 def _point(**kw) -> SbcoPoint:
