@@ -33,5 +33,6 @@
 - [x] [`bacnet-service-priority.md`](bacnet-service-priority.md) — サービス実装優先度・状態管理
 - [x] [`compose-integration-env.md`](compose-integration-env.md) — Docker Compose 統合試験環境
 - [x] [`northbound-bows-buildingos.md`](northbound-bows-buildingos.md) — BOWS コネクタ: BACnet→Building OS（[[ADR-014]][[ADR-015]]）
+- [x] [`communication-sequences.md`](communication-sequences.md) — 代表的な通信のシーケンス図（Simulator/Gateway/再読込/Admin UI/BOWS）
 
 > これらは v0.1 素案であり ❓未決事項を多く含む。確定し次第ステータス記号を更新し、重要な決定は ADR 化する（未決の要点は `../memory/decisions.md` に集約）。
