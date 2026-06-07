@@ -40,7 +40,7 @@ Requirement IDs (`PR-F-005`), acceptance IDs (`AC-6`), test scenarios (`TS-01`),
 
 These are easy to get backwards and are enforced across the design. Violating them is a design bug, not a style choice:
 
-- **Northbound = BACnet/IP; Southbound = MQTT/ZeroMQ/WoT/gRPC.** MQTT is *not* a north/output interface (corrected in PRD v1.2 — see `ADR-005`). The product exposes BACnet upward; upper systems (Building OS) ingest it via a connection gateway (Hono).
+- **Northbound = BACnet/IP; Southbound = MQTT/ZeroMQ/WoT/gRPC.** MQTT is *not* a north/output interface of the B-BC (corrected in PRD v1.2 — see `ADR-005`). The product exposes BACnet upward; upper systems (Building OS) ingest it via a connection gateway (Hono). **Note (EP-008):** the **BOWS** connector (`ADR-014`) is a *separate downstream consumer* that reads the B-BC over BACnet and publishes to Building OS via MQTT/AMQP — that MQTT is the connector→Building OS link, one layer above the B-BC, and does **not** change this invariant.
 - **`gateway_id` ≠ `bbc_id`.** `gateway_id` is the upstream gateway identifier and must never be used as the B-BC id (`ADR-003`).
 - **1 Docker container = 1 B-BC** (`ADR-002`).
 - **SBCO point list is the only input; YAML is the shared intermediate model** across all modes (`ADR-001`, `ADR-004`).
