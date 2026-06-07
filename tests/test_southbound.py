@@ -135,6 +135,22 @@ async def test_command_publishes_southbound(gateway_app):  # TS-06 / PR-F-083,09
     assert json.loads(last)["value"] == pytest.approx(42.0)
 
 
+async def test_bad_payload_does_not_kill_loop_and_marks_quality_bad(gateway_app, caplog):
+    """A malformed telemetry payload must not raise out of the handler; the point's
+    quality flips to 'bad' and the failure is logged (EP-009.4 / ADR-010)."""
+    import logging
+
+    app, cfg, transport, ai, _av = gateway_app
+    tele, _ = channels(ai)
+    with caplog.at_level(logging.ERROR, logger="bbc_sim.southbound.binding"):
+        await transport.feed(tele, b"not-json{{{")  # must not raise
+    # A subsequent valid payload must still work — the subscription survived.
+    await transport.feed(tele, json.dumps({"value": 12.0}).encode())
+    obj = app.get_object_id(ObjectIdentifier(("analogInput", ai.object_instance)))
+    assert float(obj.presentValue) == pytest.approx(12.0)
+    assert any("telemetry handling failed" in r.getMessage() for r in caplog.records)
+
+
 async def test_logical_equivalence_telemetry(gateway_app):  # AC-13 / PR-NF-017
     app, cfg, transport, ai, _av = gateway_app
     tele, _ = channels(ai)
