@@ -8,11 +8,14 @@ to bind). Configurable bind/connect roles are a future enhancement.
 from __future__ import annotations
 
 import asyncio
+import logging
 
 import zmq
 import zmq.asyncio
 
 from bbc_sim.southbound.transport import Handler
+
+_log = logging.getLogger(__name__)
 
 
 class ZmqTransport:
@@ -48,7 +51,19 @@ class ZmqTransport:
 
     async def _recv_loop(self) -> None:
         while True:
-            channel_b, payload = await self._sub.recv_multipart()
-            channel = channel_b.decode()
-            for handler in self._handlers.get(channel, []):
-                await handler(channel, payload)
+            frames = await self._sub.recv_multipart()
+            await self._dispatch(frames)
+
+    async def _dispatch(self, frames: list[bytes]) -> None:
+        """Route a received multipart message to subscribers.
+
+        Telemetry is exactly (channel, payload); anything else is malformed and is
+        logged and skipped rather than allowed to break the receive loop.
+        """
+        if len(frames) != 2:
+            _log.warning("ignoring malformed multipart message with %d frame(s)", len(frames))
+            return
+        channel_b, payload = frames
+        channel = channel_b.decode()
+        for handler in self._handlers.get(channel, []):
+            await handler(channel, payload)
