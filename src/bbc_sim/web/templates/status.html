@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}接続状態 — bbc-sim Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>接続状態</h1>
+  <button class="btn-sm" onclick="fetchPartial('/ui/partials/counters','counters-section')">更新</button>
+  <button class="btn-sm ctx-help-btn" data-page="status">?</button>
+</div>
+
+<h2>北向き BACnet/IP (ローカル内省のみ — ADR-005)</h2>
+{% if northbound %}
+<div class="status-grid">
+  <div class="status-item">
+    <span class="label">Bind 状態</span>
+    <span class="badge-{{ 'ok' if northbound.bound else 'warn' }}">{{ '🟢 Active' if northbound.bound else '🔴 Unbound' }}</span>
+  </div>
+  <div class="status-item">
+    <span class="label">アドレス</span>
+    <code>{{ northbound.bind_address }}:{{ northbound.port }}</code>
+  </div>
+  <div class="status-item">
+    <span class="label">BBMD</span>
+    {% if northbound.bbmd.enabled %}
+    <span class="badge-ok">有効</span> — BDT: {{ northbound.bbmd.bdt | join(', ') }}
+    {% else %}<span class="badge-muted">無効</span>{% endif %}
+  </div>
+  <div class="status-item">
+    <span class="label">Foreign Device</span>
+    {% if northbound.foreign_device.registered %}
+    <span class="badge-ok">登録済み</span> — {{ northbound.foreign_device.bbmd }}
+    {% else %}<span class="badge-muted">未登録</span>{% endif %}
+  </div>
+</div>
+
+<div id="counters-section">
+  {% include "partials/_counters.html" %}
+</div>
+{% else %}
+<div class="alert-warn">StatusProvider が設定されていません。</div>
+{% endif %}
+
+<h2>南向きバインディング</h2>
+{% if southbound and southbound.active %}
+<table class="table">
+  <thead><tr><th>protocol</th><th>接続状態</th></tr></thead>
+  <tbody>
+  {% for p in southbound.protocols %}
+  <tr>
+    <td>{{ p.protocol }}</td>
+    <td class="badge-{{ 'ok' if p.connected else 'warn' }}">{{ '🟢 Connected' if p.connected else '🔴 Disconnected' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="alert-info">南向きバインディングは非アクティブです。</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+  setInterval(() => fetchPartial('/ui/partials/counters', 'counters-section'), 5000);
+</script>
+{% endblock %}

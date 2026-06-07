@@ -1,0 +1,24 @@
+{% if points %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>point_id</th><th>protocol</th><th>direction</th>
+      <th>address</th><th>最終更新</th><th>品質</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for p in points %}
+    <tr class="quality-{{ p.quality }}">
+      <td><a href="/ui/objects/{{ p.point_id }}">{{ p.point_id }}</a></td>
+      <td>{{ p.protocol }}</td>
+      <td>{{ p.direction }}</td>
+      <td class="mono">{{ p.address }}</td>
+      <td>{{ p.last_update_ts | round(1) if p.last_update_ts else '—' }}</td>
+      <td class="quality-badge quality-{{ p.quality }}">{{ p.quality }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{% include "partials/_empty_bindings.html" %}
+{% endif %}

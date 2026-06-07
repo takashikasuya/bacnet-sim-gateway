@@ -30,6 +30,7 @@ metadata:
 ## Pending Decisions
 
 - ~~南向きバインディングの内部モデル抽象~~ → 確定（[[ADR-013]]）。残: 各プロトコルの auth/TLS/QoS/retain、gRPC 具象 transport（EP-006）
+- **管理 UI（EP-007）の認証・外部公開**: MVP は localhost/LAN・認証なし（REST/UI とも `host=127.0.0.1`）。認証方式・外部公開・ロール（閲覧/操作）は将来 EPIC で決定。決定したら ADR 化
 
 ### 下流設計書 v0.1 が surface した未決事項（❓）
 

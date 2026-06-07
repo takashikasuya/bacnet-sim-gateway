@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ obj.point_id if obj else '?' }} — bbc-sim Admin{% endblock %}
+{% block content %}
+{% if not obj %}
+<p class="alert-warn">オブジェクトが見つかりません。<a href="/ui/devices">一覧に戻る</a></p>
+{% else %}
+<div class="page-header">
+  <h1><code>{{ obj.point_id }}</code></h1>
+  <a href="/ui/devices" class="btn-sm">← 一覧</a>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-card">
+    <h3>プロパティ</h3>
+    <table class="prop-table">
+      <tr><th>object_type</th><td>{{ obj.object_type }}</td></tr>
+      <tr><th>object_instance</th><td>{{ obj.object_instance }}</td></tr>
+      <tr><th>object_name</th><td>{{ obj.object_name }}</td></tr>
+      <tr><th>present_value</th><td id="pv-{{ obj.point_id }}" class="pv">{{ obj.present_value }}</td></tr>
+      <tr><th>units</th><td>{{ obj.units }}</td></tr>
+      <tr><th>writable</th><td>{{ '✏️ Yes' if obj.writable else 'No' }}</td></tr>
+      <tr><th>out_of_service</th><td>{{ '⚠️ Yes' if obj.out_of_service else 'No' }}</td></tr>
+      <tr><th>status_flags</th><td>{{ obj.status_flags }}</td></tr>
+    </table>
+  </div>
+
+  {% if obj.writable %}
+  <div class="detail-card">
+    <h3>値の書込み</h3>
+    <p class="note">⚠️ 書込みは BACnet northbound の presentValue を変更します。</p>
+    <form id="write-form">
+      <input type="text" id="write-value" placeholder="新しい値" class="input-sm" required>
+      <button type="submit" class="btn-danger btn-sm">書込み</button>
+    </form>
+    <div id="write-result"></div>
+  </div>
+  {% endif %}
+
+  <div class="detail-card">
+    <h3>Fault 注入</h3>
+    <p class="note">⚠️ オブジェクトの状態を変更します。テスト用途。</p>
+    <form id="fault-form">
+      <select id="fault-type" class="input-sm">
+        {% for ft in fault_types %}
+        <option value="{{ ft }}">{{ ft }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" id="fault-value" placeholder="値 (abnormal 時のみ)" class="input-sm">
+      <button type="submit" class="btn-danger btn-sm">注入</button>
+    </form>
+    <div id="fault-result"></div>
+  </div>
+
+  <div class="detail-card">
+    <h3>OutOfService トグル</h3>
+    <button id="oos-btn" class="btn-sm btn-{{ 'danger' if not obj.out_of_service else 'warn' }}"
+            onclick="toggleOos('{{ obj.point_id }}', {{ 'true' if obj.out_of_service else 'false' }})">
+      {{ 'OOS を解除' if obj.out_of_service else 'OutOfService に設定' }}
+    </button>
+    <div id="oos-result"></div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if obj %}
+<script>
+const pointId = {{ obj.point_id | tojson }};
+
+// Coerce to a number only when the whole string is a finite number, so "0" stays
+// numeric 0 (parseFloat("0")||val would fall back to the string "0").
+function coerceValue(raw) {
+  const n = Number(raw);
+  return raw.trim() !== '' && Number.isFinite(n) ? n : raw;
+}
+
+document.getElementById('write-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (!confirm('present_value を変更します。よろしいですか？')) return;
+  const val = document.getElementById('write-value').value;
+  const res = await postJson('/objects/' + pointId + '/write', {value: coerceValue(val)});
+  document.getElementById('write-result').innerHTML =
+    res.ok ? '<span class="ok">✓ 書込み成功: ' + (await res.json()).present_value + '</span>'
+           : '<span class="err">✗ エラー: ' + res.status + '</span>';
+});
+
+document.getElementById('fault-form')?.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const faultType = document.getElementById('fault-type').value;
+  if (!confirm('Fault注入: ' + faultType + ' を適用します。')) return;
+  const faultVal = document.getElementById('fault-value').value;
+  const body = {point_id: pointId, fault: faultType};
+  if (faultVal) body.value = coerceValue(faultVal);
+  const res = await postJson('/simulation/scenario', body);
+  document.getElementById('fault-result').innerHTML =
+    res.ok ? '<span class="ok">✓ 適用済み</span>'
+           : '<span class="err">✗ エラー: ' + res.status + '</span>';
+});
+
+async function toggleOos(pid, currentOos) {
+  const fault = currentOos ? 'clear' : 'out_of_service';
+  if (!confirm('OutOfService を ' + (currentOos ? '解除' : '設定') + ' します。')) return;
+  const res = await postJson('/simulation/scenario', {point_id: pid, fault: fault});
+  document.getElementById('oos-result').innerHTML =
+    res.ok ? '<span class="ok">✓ 変更済み。ページを再読込してください。</span>'
+           : '<span class="err">✗ エラー: ' + res.status + '</span>';
+}
+</script>
+{% endif %}
+{% endblock %}

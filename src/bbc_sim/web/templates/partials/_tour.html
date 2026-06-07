@@ -1,0 +1,68 @@
+<div id="tour-overlay" class="tour-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="初回ガイドツアー">
+  <div class="tour-modal">
+    <div id="tour-steps">
+
+      <div class="tour-step" data-step="0">
+        <h2>🏢 bbc-sim Admin へようこそ</h2>
+        <p>このツールは <strong>SBCO BACnet B-BC シミュレータ / ゲートウェイ</strong> の管理画面です。</p>
+        <p>実設備なしに BACnet/IP で仮想デバイスを公開し、Building OS / Eclipse Hono / Ditto との結合試験が可能です。</p>
+        <p><small>このガイドは初回のみ表示されます。いつでも <a href="/ui/help">ヘルプページ</a> で確認できます。</small></p>
+      </div>
+
+      <div class="tour-step" data-step="1" style="display:none">
+        <h2>↕️ 北向き / 南向きとは</h2>
+        <div class="tour-diagram">
+          <div class="td-box td-north">Building OS<br>/ Hono / Ditto</div>
+          <div class="td-arr">↑ BACnet/IP<br><small>northbound (常に)</small></div>
+          <div class="td-box td-core">bbc-sim (B-BC)</div>
+          <div class="td-arr">↓ MQTT / ZeroMQ<br><small>southbound (オプション)</small></div>
+          <div class="td-box td-south">フィールドデータ</div>
+        </div>
+        <p><strong>northbound</strong> は常に BACnet/IP です。上流システムは BACnet/IP でデータを取得します。</p>
+        <p><strong>southbound</strong> は MQTT / ZeroMQ / WoT / gRPC — フィールド側のバインディングです（gateway/combined モード時）。</p>
+      </div>
+
+      <div class="tour-step" data-step="2" style="display:none">
+        <h2>⚙️ 動作モード</h2>
+        <dl>
+          <dt>simulator</dt><dd>値を内部生成。上流システムのテストに使用。</dd>
+          <dt>gateway</dt><dd>南向きから受け取った実データを BACnet/IP に反映。</dd>
+          <dt>combined</dt><dd>オブジェクト単位で両方を混在。</dd>
+        </dl>
+        <p>現在のモードは画面上部のナビゲーションバーで確認できます。変更にはプロセス再起動が必要です。</p>
+      </div>
+
+      <div class="tour-step" data-step="3" style="display:none">
+        <h2>📋 主な画面の案内</h2>
+        <ul>
+          <li><strong>Dashboard</strong> — 全体状態の確認（5 秒自動更新）</li>
+          <li><strong>デバイス/オブジェクト</strong> — オブジェクト一覧 / 値の書込み / Fault 注入</li>
+          <li><strong>バインディング</strong> — 南向き接続状態と最終受信</li>
+          <li><strong>接続状態</strong> — 北向き BACnet/IP カウンタ（ローカル内省のみ）</li>
+          <li><strong>ログ</strong> — プロセス内リングバッファ</li>
+          <li><strong>点リスト</strong> — YAML 再読込と差分適用</li>
+        </ul>
+      </div>
+
+      <div class="tour-step" data-step="4" style="display:none">
+        <h2>⚠️ 破壊的操作について</h2>
+        <p>以下の操作は BACnet オブジェクトや実行状態を変更します:</p>
+        <ul>
+          <li>値の書込み — presentValue を変更（上流システムに見える）</li>
+          <li>Fault 注入 — statusFlags / OutOfService を変更</li>
+          <li>点リスト再読込 — オブジェクトの追加・削除・変更</li>
+        </ul>
+        <p>各操作の前に確認ダイアログが表示されます。詳しくは <a href="/ui/help#destructive">ヘルプ</a> を参照。</p>
+      </div>
+
+    </div>
+
+    <div class="tour-nav">
+      <button id="tour-prev" class="btn-sm" onclick="tourPrev()" style="visibility:hidden">← 前へ</button>
+      <span id="tour-indicator">1 / 5</span>
+      <button id="tour-next" class="btn-sm" onclick="tourNext()">次へ →</button>
+      <button id="tour-close" class="btn-sm" onclick="closeTour()" style="display:none">完了</button>
+    </div>
+    <button class="tour-skip" onclick="closeTour()">スキップ</button>
+  </div>
+</div>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — bbc-sim Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <button class="btn-sm" onclick="refreshTiles()">更新</button>
+  <a class="btn-sm" href="/ui/help" onclick="showTour()">ガイドを見る</a>
+</div>
+
+<div id="tiles">
+  {% include "partials/_tiles.html" %}
+</div>
+
+<div class="info-row">
+  <span class="label">B-BC ID</span> <code>{{ bbc_id }}</code>
+  &nbsp;|&nbsp;
+  <span class="label">Device ID</span> <code>{{ device_id }}</code>
+  &nbsp;|&nbsp;
+  <a href="/ui/status">詳細な接続状態 →</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  setInterval(refreshTiles, 5000);
+  function refreshTiles() {
+    fetchPartial('/ui/partials/tiles', 'tiles');
+  }
+</script>
+{% endblock %}
