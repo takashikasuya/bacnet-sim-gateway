@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from bbc_sim.models import BacnetObjectSpec, BacnetObjectType, UpdateConfig
-from bbc_sim.simulation.generators import make_generator
+from bbc_sim.simulation.generators import ValueGenerator, make_generator
 
 
 def _analog(**update) -> BacnetObjectSpec:
@@ -66,3 +66,18 @@ def test_unknown_mode_raises():
 def test_sinusoidal_rejects_nonpositive_period():
     with pytest.raises(ValueError):
         make_generator(_analog(mode="sinusoidal", params={"period": 0}))
+
+
+def test_value_generator_is_abstract():
+    """The base class must not be instantiable directly (EP-009.11)."""
+    with pytest.raises(TypeError):
+        ValueGenerator()  # type: ignore[abstract]
+
+
+def test_replay_cursor_resets_on_fresh_instance():
+    """Building a new generator resets internal state (engine.rebuild relies on this)."""
+    spec = _analog(mode="replay", params={"sequence": [1, 2, 3]})
+    g1 = make_generator(spec)
+    assert [g1.next(0), g1.next(1)] == [1, 2]  # cursor advanced
+    g2 = make_generator(spec)  # fresh instance
+    assert g2.next(0) == 1  # cursor reset, not carried over from g1

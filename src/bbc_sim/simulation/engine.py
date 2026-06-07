@@ -54,7 +54,12 @@ class SimulationEngine:
         return bool(self._generators)
 
     def rebuild(self, config: SimulatorConfig) -> None:
-        """Rebuild generators from a new config after a live point-list reload."""
+        """Rebuild generators from a new config after a live point-list reload.
+
+        Each generator is constructed fresh via ``make_generator``, so internal
+        state (RNG seed, replay/scenario cursor) is reset deterministically rather
+        than carried over from the previous config (EP-009.11).
+        """
         self.config = config
         self._generators = []
         for spec in config.objects:
