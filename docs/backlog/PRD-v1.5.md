@@ -20,6 +20,7 @@
 | v1.3 | 各 BACnet オブジェクトに**セマンティックタグ（`tags` プロパティ）**を付与する要求を追加。SBCO `tags` 列から決定的に生成し、語彙は **BACnet 標準タグ ＋ Project Haystack** を既定（将来 ASHRAE 223P へ連携） |
 | v1.4 | **Raspberry Pi（ARM）でのネイティブ実行**を要求化（PR-NF-019/020）。Docker は配布手段の一つであり必須ではない。SBCO 原典リポジトリの URL を明記 |
 | v1.5 | 設計 grill (2026-06-07) の確定を反映: **device-mapping mode**（aggregated/multi-device/auto-partition, PR-F-091〜094, CON-8）、**BACnet タグの Brick 由来生成**（PR-F-017 改, AC-14 改）、**南向きアドレス local_id 第一**（PR-F-090 改）。SBCO 原典の事実補正（labels/scale/`&&`/point_type 意味論）。決定: ADR-009〜012、ADR-002/006/007/008 改訂 |
+| v1.6 | **管理者向け Web UI** を追加（EP-007 / MVP-2）。PR-F-053〜057 を新設し PR-F-052 を「任意」から正式要求（S）へ格上げ。北向きは BACnet/IP 稼働状態の内省のみ（ADR-005 厳守、上流プローブなし）、軽量サーバレンダリング（Jinja2/HTMX・jinja2 のみ追加・Pi ネイティブ）、初回利用者向けオンボーディングを必須化。AC-15/16 追加。MVP は localhost/LAN・認証なし（認証/外部公開は将来 EPIC） |
 
 ---
 
@@ -296,7 +297,12 @@ object type 自動推定（PR-F-005）の規定：
 | ID | 要求 | 優先度 | MVP | 原典 |
 |----|------|:---:|:---:|:---:|
 | PR-F-050 | REST API で device/object 情報取得・値書込・シナリオ変更を提供する | S | 2 | 17 |
-| PR-F-052 | Web UI を提供する（任意） | C | 2 | 3 |
+| PR-F-052 | 管理者向け Web UI を提供する（状態確認・値/状態変更・ログ・バインディング・点リスト再読込・オンボーディング） | S | 2 | 3 |
+| PR-F-053 | REST/UI でログ（検証/バインディング/Fault/BACnet サービス）を閲覧できる | S | 2 | 新 |
+| PR-F-054 | REST/UI で runtime 状態（mode・北向き bind/カウンタ・南向き接続）を取得できる | S | 2 | 新 |
+| PR-F-055 | REST/UI で南向きバインディング状態（protocol/address/最終更新/品質）を確認できる | S | 2 | 新 |
+| PR-F-056 | REST/UI で点リスト再読込（検証→差分→適用 or 再起動要求）を実行できる | S | 2 | 新 |
+| PR-F-057 | 初回利用者向けオンボーディング（ガイド付きツアー・常設 Help・コンテキストヘルプ・空状態ガイド）を提供する | S | 2 | 新 |
 
 #### CLI
 
@@ -392,6 +398,8 @@ object type 自動推定（PR-F-005）の規定：
 | AC-12 | Combined モードで内部生成と南向きバインドのオブジェクトを同一 BACnet/IP に同時公開できる | （新）TS-12 想定 | PR-F-080,081 |
 | AC-13 | ZeroMQ / WoT / gRPC の各南向きバインディングで取込・コマンド送出ができる | （新）TS-13 想定 | PR-F-085,086,087 |
 | AC-14 | オブジェクトの `tags` プロパティを ReadProperty で取得でき、内容が **device_type/point_type の Brick クラスから導出**された語彙整合タグである。SBCO `tags` 列は `metadata.search_tags` に保持 | （新）TS-14 想定 | PR-F-016,017 / ADR-012 |
+| AC-15 | 管理 UI から主要管理操作（状態確認・値書込・Fault・点リスト再読込・ログ閲覧）が完結できる | （新）TS-15 想定 | PR-F-052,053,054,055,056 |
+| AC-16 | 初回利用者が初回ツアー／Help ページから概念（北向き/南向き・モード）と主要操作を理解できる | （新）TS-16 想定 | PR-F-057 |
 
 ### 10.2 成功指標 (Success Metrics)
 
@@ -411,7 +419,7 @@ object type 自動推定（PR-F-005）の規定：
 | フェーズ | 主要スコープ | 含む要求（抜粋） |
 |---------|--------------|------------------|
 | MVP-1 | SBCO→YAML→1 B-BC、Who-Is/I-Am、Read/ReadMultiple/WriteProperty、Docker 起動、YABE 北向き接続確認（Simulator） | PR-F-001〜007,010〜024,040,060〜062 / PR-NF-001,003,005,008,009 |
-| MVP-2 | モード機構、南向きバインディング（MQTT/ZeroMQ/gRPC）、北向き BACnet の Hono/Ditto/Building OS 取込、COV、WritePropertyMultiple、REST、Fault、BBMD | PR-F-025〜031,041,050,080〜085,087〜090,063 / PR-NF-002,007,010,013〜017 |
+| MVP-2 | モード機構、南向きバインディング（MQTT/ZeroMQ/gRPC）、北向き BACnet の Hono/Ditto/Building OS 取込、COV、WritePropertyMultiple、REST、Fault、BBMD、管理者向け Web UI（EP-007） | PR-F-025〜031,041,050,052〜057,080〜085,087〜090,063 / PR-NF-002,007,010,013〜017 |
 | MVP-3 | Web of Things 南向きバインディング、BACnet/SC、PICS/EDE 生成、BTL 適合支援、意味モデル出力 | PR-F-070〜073,086 |
 
 ---
