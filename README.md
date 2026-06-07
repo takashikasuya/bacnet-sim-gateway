@@ -22,6 +22,17 @@ uv run bbc-sim run --config config/simulator.yaml
 | `bbc-sim validate-point-list` | SBCO CSV 検証 |
 | `bbc-sim run` | 仮想 B-BC 起動（BACnet/IP 北向き） |
 | `bbc-sim whois` / `read-property` / `read-property-multiple` / `write-property` / `list-objects` | クライアント疎通 |
+| `bbc-sim bows run` | BOWS コネクタ: B-BC を BACnet で読み Building OS へ MQTT 供給（EP-008） |
+
+### BOWS connector (BACnet → Building OS, EP-008)
+
+```bash
+# 仮想 B-BC を読み、telemetry/{tenant}/{deviceId} へ bacnet-device-message を publish
+uv run bbc-sim bows run -t 127.0.0.1:47808 -d bbc-local-001 --tenant default \
+  --transport mqtt://127.0.0.1:1883 --interval 10
+```
+
+Building OS（`gutp-building-os-oss`）の BACnet ネイティブスキーマ準拠（[ADR-015](docs/adr/ADR-015-buildingos-bacnet-schema-mqtt-first.md) / `docs/specs/northbound-bows-buildingos.md`）。AMQP/Hono と下り制御は将来（#48/#49）。
 
 ## Export (standards artifacts & semantic model, EP-006)
 

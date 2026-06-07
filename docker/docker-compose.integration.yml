@@ -28,3 +28,25 @@ services:
       - mqtt://127.0.0.1:1883
       - --rest-port
       - "8080"
+
+  # EP-008 BOWS connector: read the B-BC over BACnet and publish Building OS
+  # bacnet-device-message telemetry to Mosquitto (telemetry/{tenant}/{deviceId}).
+  bows:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    network_mode: host  # BACnet/IP discovery of the B-BC
+    depends_on: [bbc-sim, mosquitto]
+    command:
+      - bows
+      - run
+      - --target
+      - 127.0.0.1:47808
+      - --device-id
+      - bbc-local-001
+      - --tenant
+      - default
+      - --transport
+      - mqtt://127.0.0.1:1883
+      - --interval
+      - "10"
