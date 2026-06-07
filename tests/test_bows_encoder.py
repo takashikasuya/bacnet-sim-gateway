@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from bbc_sim.bows.encoder import encode_device_message
 from bbc_sim.bows.models import Reading
 from bbc_sim.models import BacnetObjectType
 
-NOW = datetime(2026, 6, 7, 12, 0, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 6, 7, 12, 0, 0, tzinfo=UTC)
 
 
 def test_encodes_top_level_shape():
@@ -53,8 +53,10 @@ def test_object_type_enums():
 
 
 def test_present_value_is_numeric_per_type():
-    rd = lambda ot, v: encode_device_message("d", 1, [Reading(ot, 1, v)], now=NOW)[0][
-        "ValueString"][0]["Properties"]["PresentValue"]
+    def rd(ot, v):
+        return encode_device_message("d", 1, [Reading(ot, 1, v)], now=NOW)[0][
+            "ValueString"][0]["Properties"]["PresentValue"]
+
     assert rd(BacnetObjectType.binaryInput, "active") == 1
     assert rd(BacnetObjectType.binaryInput, "inactive") == 0
     assert rd(BacnetObjectType.binaryValue, True) == 1
@@ -63,7 +65,7 @@ def test_present_value_is_numeric_per_type():
 
 
 def test_reading_timestamp_overrides_now():
-    ts = datetime(2026, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
+    ts = datetime(2026, 1, 1, 9, 0, 0, tzinfo=UTC)
     e = encode_device_message("d", 1, [
         Reading(BacnetObjectType.analogInput, 1, 1.0, timestamp=ts),
     ], now=NOW)[0]["ValueString"][0]
