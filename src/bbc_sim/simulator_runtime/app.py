@@ -21,9 +21,8 @@ from bacpypes3.apdu import (
 from bacpypes3.app import Application
 from bacpypes3.basetypes import ErrorType, ObjectPropertyReference
 from bacpypes3.errors import ExecutionError
-from bacpypes3.primitivedata import ObjectIdentifier
 
-from bbc_sim.bacnet_objects.builder import _OID_TYPE, build_object_list
+from bbc_sim.bacnet_objects.builder import build_object_list, oid_key
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.yaml_generator.yaml_io import load_config
 
@@ -47,12 +46,7 @@ class Counters:
 
 def compute_writable_oids(config: SimulatorConfig) -> frozenset[tuple[str, int]]:
     """Derive the writable-OID frozenset from config (used by build_application and reload)."""
-    return frozenset(
-        (str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
-         spec.object_instance)
-        for spec in config.objects
-        if spec.writable
-    )
+    return frozenset(oid_key(spec) for spec in config.objects if spec.writable)
 
 
 class BBCApplication(Application):
@@ -67,6 +61,20 @@ class BBCApplication(Application):
     _command_oids: frozenset[tuple[str, int]] = frozenset()
     on_command: CommandHook | None = None
     counters: Counters  # set by build_application
+
+    # --- configuration accessors (keep callers off private attributes) ---
+
+    def set_writable_oids(self, oids: frozenset[tuple[str, int]]) -> None:
+        """Set the OIDs whose present-value accepts WriteProperty (AC-5)."""
+        self._writable_oids = oids
+
+    def set_command_oids(self, oids: frozenset[tuple[str, int]]) -> None:
+        """Set the OIDs that forward northbound writes to the command hook."""
+        self._command_oids = oids
+
+    def set_command_hook(self, hook: CommandHook | None) -> None:
+        """Register (or clear) the southbound command-forwarding hook."""
+        self.on_command = hook
 
     async def do_WhoIsRequest(self, apdu: Any) -> None:  # type: ignore[override]
         self.counters.who_is += 1
@@ -93,9 +101,7 @@ class BBCApplication(Application):
             if obj is not None:
                 await self.on_command(oid, obj.presentValue)
 
-    async def do_WritePropertyMultipleRequest(
-        self, apdu: WritePropertyMultipleRequest
-    ) -> None:
+    async def do_WritePropertyMultipleRequest(self, apdu: WritePropertyMultipleRequest) -> None:
         # Enforce writable on every present-value element before delegating (AC-5).
         # Raise the correct WPM error type server-side. Note: bacpypes3 0.0.106 cannot
         # transport WPM error responses over IP (the client times out) — see
@@ -108,9 +114,7 @@ class BBCApplication(Application):
                     and oid not in self._writable_oids
                 ):
                     raise WritePropertyMultipleError(
-                        errorType=ErrorType(
-                            errorClass="property", errorCode="writeAccessDenied"
-                        ),
+                        errorType=ErrorType(errorClass="property", errorCode="writeAccessDenied"),
                         firstFailedWriteAttempt=ObjectPropertyReference(
                             objectIdentifier=spec.objectIdentifier,
                             propertyIdentifier=prop_value.propertyIdentifier,
@@ -138,7 +142,7 @@ def build_application(config: SimulatorConfig, *, with_network: bool = True) -> 
     objects = build_object_list(config, with_network=with_network)
     app = BBCApplication.from_object_list(objects)
     app.counters = Counters()
-    app._writable_oids = compute_writable_oids(config)
+    app.set_writable_oids(compute_writable_oids(config))
     return app
 
 
@@ -154,8 +158,11 @@ async def run_async(
     from bbc_sim.simulator_runtime.runtime import Runtime
 
     runtime = Runtime(
-        config, transport_uri=transport_uri, rest_port=rest_port,
-        source_path=source_path, ui_enabled=ui_enabled,
+        config,
+        transport_uri=transport_uri,
+        rest_port=rest_port,
+        source_path=source_path,
+        ui_enabled=ui_enabled,
     )
     await runtime.run_forever(stop)
 
@@ -168,10 +175,15 @@ def run(
     ui_enabled: bool = False,
 ) -> None:
     """Blocking entry point for the CLI."""
-    asyncio.run(run_async(
-        config, transport_uri=transport_uri, rest_port=rest_port,
-        source_path=source_path, ui_enabled=ui_enabled,
-    ))
+    asyncio.run(
+        run_async(
+            config,
+            transport_uri=transport_uri,
+            rest_port=rest_port,
+            source_path=source_path,
+            ui_enabled=ui_enabled,
+        )
+    )
 
 
 def run_from_path(
@@ -180,5 +192,4 @@ def run_from_path(
     rest_port: int | None = None,
 ) -> None:
     p = Path(config_path)
-    run(load_config(p), transport_uri=transport_uri, rest_port=rest_port,
-        source_path=p.resolve())
+    run(load_config(p), transport_uri=transport_uri, rest_port=rest_port, source_path=p.resolve())

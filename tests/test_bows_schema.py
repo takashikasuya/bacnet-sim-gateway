@@ -18,14 +18,16 @@ from bbc_sim.bows.models import Reading
 from bbc_sim.models import BacnetObjectType
 
 SCHEMA = json.loads(
-    (Path(__file__).parent / "fixtures" / "buildingos-bacnet-device-message.schema.json")
-    .read_text(encoding="utf-8")
+    (Path(__file__).parent / "fixtures" / "buildingos-bacnet-device-message.schema.json").read_text(
+        encoding="utf-8"
+    )
 )
 
 
 def test_encoder_output_validates_against_buildingos_schema():
     message = encode_device_message(
-        "bbc-local-001", 1001,
+        "bbc-local-001",
+        1001,
         [
             Reading(BacnetObjectType.analogInput, 1001, 21.5),
             Reading(BacnetObjectType.binaryInput, 1, "active"),

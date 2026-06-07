@@ -27,8 +27,12 @@ def register(app: typer.Typer) -> None:
     ) -> None:
         """Poll the B-BC and publish telemetry/{tenant}/{device_id} to Building OS."""
         config = BowsConfig(
-            target=target, device_id=device_id, tenant=tenant,
-            transport_uri=transport, interval=interval, local_address=local,
+            target=target,
+            device_id=device_id,
+            tenant=tenant,
+            transport_uri=transport,
+            interval=interval,
+            local_address=local,
         )
         typer.secho(
             f"BOWS: {target} -> {transport} topic telemetry/{tenant}/{device_id} "

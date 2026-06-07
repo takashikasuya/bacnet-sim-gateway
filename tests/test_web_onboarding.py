@@ -22,8 +22,11 @@ def _make_ui_client(cfg, mode=None):
     bapp = build_application(cfg, with_network=False)
     handler = RingBufferLogHandler()
     status = StatusProvider(
-        config=cfg, app=bapp, bound=False,
-        get_manager=lambda: None, log_handler=handler,
+        config=cfg,
+        app=bapp,
+        bound=False,
+        get_manager=lambda: None,
+        log_handler=handler,
     )
     runtime = Runtime.__new__(Runtime)
     runtime.config = cfg

@@ -24,7 +24,7 @@ def make_transport(uri: str) -> Transport:
         from bbc_sim.southbound.zeromq import ZmqTransport
 
         # zmq://<sub>|<pub>  e.g. zmq://tcp://127.0.0.1:5556|tcp://127.0.0.1:5557
-        body = uri[len("zmq://"):]
+        body = uri[len("zmq://") :]
         sub, _, pub = body.partition("|")
         return ZmqTransport(sub, pub or sub)
     raise ValueError(f"unsupported transport uri: {uri!r}")

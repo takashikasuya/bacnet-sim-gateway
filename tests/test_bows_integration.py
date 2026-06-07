@@ -23,14 +23,16 @@ from bbc_sim.yaml_generator.pointlist import read_point_list
 pytestmark = pytest.mark.integration
 
 SCHEMA = json.loads(
-    (Path(__file__).parent / "fixtures" / "buildingos-bacnet-device-message.schema.json")
-    .read_text(encoding="utf-8")
+    (Path(__file__).parent / "fixtures" / "buildingos-bacnet-device-message.schema.json").read_text(
+        encoding="utf-8"
+    )
 )
 
 
 async def test_bows_publishes_to_mosquitto(sample_pointlist, free_port):
-    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="bbc-local-001",
-                             device_id=1001)
+    cfg, _ = generate_config(
+        read_point_list(sample_pointlist), bbc_id="bbc-local-001", device_id=1001
+    )
     cfg.network.bind_address = "127.0.0.1"
     cfg.network.port = free_port()
     server = build_application(cfg)
@@ -42,13 +44,20 @@ async def test_bows_publishes_to_mosquitto(sample_pointlist, free_port):
     async def _capture(_channel: str, payload: bytes) -> None:
         captured.append(payload)
 
+    # Connect first, then subscribe — paho drops subscriptions issued before the
+    # connection is established (mirrors SouthboundManager.start()).
     sub = MqttTransport("127.0.0.1", 1883)
-    sub.subscribe(topic, _capture)
     await sub.start()
+    await asyncio.sleep(0.2)  # allow CONNACK before subscribing
+    sub.subscribe(topic, _capture)
+    await asyncio.sleep(0.2)  # allow SUBACK before BOWS publishes
 
     bows = BowsRunner(
-        BowsConfig(target=f"127.0.0.1:{cfg.network.port}", device_id="bbc-local-001",
-                   transport_uri="mqtt://127.0.0.1:1883"),
+        BowsConfig(
+            target=f"127.0.0.1:{cfg.network.port}",
+            device_id="bbc-local-001",
+            transport_uri="mqtt://127.0.0.1:1883",
+        ),
     )
     await bows.start()
     await asyncio.sleep(0.3)

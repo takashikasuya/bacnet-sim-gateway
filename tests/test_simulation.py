@@ -5,13 +5,18 @@ from __future__ import annotations
 import pytest
 
 from bbc_sim.models import BacnetObjectSpec, BacnetObjectType, UpdateConfig
-from bbc_sim.simulation.generators import make_generator
+from bbc_sim.simulation.generators import ValueGenerator, make_generator
 
 
 def _analog(**update) -> BacnetObjectSpec:
     return BacnetObjectSpec(
-        point_id="P1", object_type=BacnetObjectType.analogInput, object_instance=1,
-        object_name="n", present_value=20.0, min_pres_value=0.0, max_pres_value=40.0,
+        point_id="P1",
+        object_type=BacnetObjectType.analogInput,
+        object_instance=1,
+        object_name="n",
+        present_value=20.0,
+        min_pres_value=0.0,
+        max_pres_value=40.0,
         update=UpdateConfig(**update),
     )
 
@@ -43,9 +48,9 @@ def test_replay_cycles_sequence():
 
 def test_scenario_holds_then_steps():
     # scenario: list of (t, value) setpoints; value holds until next setpoint time.
-    g = make_generator(_analog(
-        mode="scenario", params={"setpoints": [[0, 10.0], [3, 25.0], [6, 5.0]]}
-    ))
+    g = make_generator(
+        _analog(mode="scenario", params={"setpoints": [[0, 10.0], [3, 25.0], [6, 5.0]]})
+    )
     assert g.next(0) == 10.0
     assert g.next(2) == 10.0
     assert g.next(3) == 25.0
@@ -61,3 +66,23 @@ def test_unknown_mode_raises():
 def test_sinusoidal_rejects_nonpositive_period():
     with pytest.raises(ValueError):
         make_generator(_analog(mode="sinusoidal", params={"period": 0}))
+
+
+def test_value_generator_is_abstract():
+    """The base class must not be instantiable even with valid args (EP-009.11).
+
+    Passing a valid spec ensures the TypeError is due to the abstract next()
+    method, not a missing constructor argument.
+    """
+    spec = _analog(mode="random_walk")
+    with pytest.raises(TypeError, match="abstract"):
+        ValueGenerator(spec)  # type: ignore[abstract]
+
+
+def test_replay_cursor_resets_on_fresh_instance():
+    """Building a new generator resets internal state (engine.rebuild relies on this)."""
+    spec = _analog(mode="replay", params={"sequence": [1, 2, 3]})
+    g1 = make_generator(spec)
+    assert [g1.next(0), g1.next(1)] == [1, 2]  # cursor advanced
+    g2 = make_generator(spec)  # fresh instance
+    assert g2.next(0) == 1  # cursor reset, not carried over from g1

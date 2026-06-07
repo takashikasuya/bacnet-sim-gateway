@@ -8,11 +8,14 @@ also suppress simulated updates via the engine.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
 from bacpypes3.object import Object
+
+_log = logging.getLogger(__name__)
 
 # statusFlags = [in-alarm, fault, overridden, out-of-service]
 _NORMAL_FLAGS = [0, 0, 0, 0]
@@ -87,7 +90,13 @@ def _abnormal_value(obj: Object) -> float:
 
 
 def _trySet(obj: Object, attr: str, value: Any) -> None:
+    """Best-effort set of an optional property (e.g. reliability/eventState).
+
+    Some object types don't carry every optional property, so a failure here is
+    expected and non-fatal — but it is logged at DEBUG rather than silently
+    swallowed, and only value/attribute errors are caught (EP-009.4).
+    """
     try:
         setattr(obj, attr, value)
-    except Exception:  # noqa: BLE001 - some object types lack reliability/eventState
-        pass
+    except (AttributeError, ValueError, TypeError) as exc:
+        _log.debug("could not set optional property %s on %s: %s", attr, obj, exc)

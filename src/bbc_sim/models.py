@@ -39,13 +39,13 @@ class RuntimeMode(StrEnum):
     """Value-source mode (operating-modes.md). Orthogonal to device-mapping mode."""
 
     simulator = "simulator"  # values internally generated
-    gateway = "gateway"      # values sourced from southbound bindings
-    combined = "combined"    # per-object: simulate or bind
+    gateway = "gateway"  # values sourced from southbound bindings
+    combined = "combined"  # per-object: simulate or bind
 
 
 class BindingDirection(StrEnum):
     telemetry = "telemetry"  # south -> BACnet presentValue
-    command = "command"      # north WriteProperty -> south
+    command = "command"  # north WriteProperty -> south
     both = "both"
 
 

@@ -18,8 +18,15 @@ from bbc_sim.yaml_generator.yaml_io import dump_config
 runner = CliRunner()
 
 EXPECTED_COMMANDS = (
-    "generate-yaml", "validate", "validate-point-list", "run",
-    "whois", "read-property", "read-property-multiple", "write-property", "list-objects",
+    "generate-yaml",
+    "validate",
+    "validate-point-list",
+    "run",
+    "whois",
+    "read-property",
+    "read-property-multiple",
+    "write-property",
+    "list-objects",
 )
 
 
@@ -53,9 +60,12 @@ def test_run_cli_serves_bbc(served_config, free_port):
     path, port = served_config
     proc = subprocess.Popen(
         [sys.executable, "-m", "bbc_sim.cli", "run", "-c", str(path)],
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
     )
     try:
+
         async def _probe() -> int | None:
             client = build_client(f"127.0.0.1:{free_port()}")
             try:

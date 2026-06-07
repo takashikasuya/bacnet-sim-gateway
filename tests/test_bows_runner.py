@@ -27,14 +27,14 @@ def test_bows_command_registered():
 
 def test_topic_uses_tenant_and_device_id():
     cfg = BowsConfig(target="x", device_id="bbc-local-001", tenant="site-a")
-    assert BowsRunner(cfg, transport=InMemoryTransport()).topic == \
-        "telemetry/site-a/bbc-local-001"
+    assert BowsRunner(cfg, transport=InMemoryTransport()).topic == "telemetry/site-a/bbc-local-001"
 
 
 @pytest.fixture
 async def bbc_server(sample_pointlist, free_port):
-    cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="bbc-local-001",
-                             device_id=1001)
+    cfg, _ = generate_config(
+        read_point_list(sample_pointlist), bbc_id="bbc-local-001", device_id=1001
+    )
     cfg.network.bind_address = "127.0.0.1"
     cfg.network.port = free_port()
     server = build_application(cfg)

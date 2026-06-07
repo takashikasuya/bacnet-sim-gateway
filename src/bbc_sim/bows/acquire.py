@@ -52,8 +52,8 @@ async def acquire(client, target: str) -> tuple[int, list[Reading]]:
             continue  # device / network-port / unsupported
         try:
             value = await read_property(client, target, ident, "present-value")
-        except Exception:  # noqa: BLE001 - skip unreadable object, keep the run going
-            _log.warning("BOWS acquire: could not read present-value of %s", ident)
+        except Exception as exc:  # noqa: BLE001 - skip unreadable object, keep the run going
+            _log.warning("BOWS acquire: could not read present-value of %s: %s", ident, exc)
             continue
         readings.append(Reading(object_type, int(inst), value))
     return device_instance, readings

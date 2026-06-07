@@ -8,15 +8,24 @@ from __future__ import annotations
 
 import math
 import random
+from abc import ABC, abstractmethod
 from typing import Any
 
 from bbc_sim.models import BacnetObjectSpec
 
 
-class ValueGenerator:
-    def __init__(self, spec: BacnetObjectSpec) -> None:  # noqa: B027 - base ctor
+class ValueGenerator(ABC):
+    """Maps a time ``t`` (seconds) to a presentValue.
+
+    Each concrete generator owns its own internal state (RNG, cursor, …) set up in
+    its constructor, so building a fresh instance fully resets that state — this is
+    what ``SimulationEngine.rebuild`` relies on after a point-list reload.
+    """
+
+    def __init__(self, spec: BacnetObjectSpec) -> None:
         self.spec = spec
 
+    @abstractmethod
     def next(self, t: float) -> Any:
         """Return the presentValue at time t."""
         raise NotImplementedError

@@ -64,6 +64,26 @@ _OID_TYPE: dict[BacnetObjectType, str] = {
 }
 
 
+def spec_to_oid(spec: BacnetObjectSpec) -> ObjectIdentifier:
+    """The bacpypes3 ObjectIdentifier for a spec ((type token, instance)).
+
+    Single source of truth for OID construction — used by the builder, the
+    runtime application, southbound bindings, point-list reload, the REST API,
+    and the web UI so the mapping never drifts between call sites (EP-009.2).
+    """
+    return ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+
+
+def oid_key(spec: BacnetObjectSpec) -> tuple[str, int]:
+    """The (dash-style type, instance) tuple used to key writable/command sets.
+
+    ``str(oid[0])`` renders the dash-style token (e.g. "analog-input") that
+    BBCApplication compares against in its WriteProperty enforcement, so the
+    writable-OID set and the southbound command map must use the same key.
+    """
+    return (str(spec_to_oid(spec)[0]), spec.object_instance)
+
+
 def _binary_pv(value: Any) -> str:
     if isinstance(value, str):
         return value if value in ("active", "inactive") else "inactive"
@@ -73,7 +93,7 @@ def _binary_pv(value: Any) -> str:
 def build_object(spec: BacnetObjectSpec) -> Object:
     """Build a single bacpypes3 object with its required properties."""
     cls = _CLASSES[spec.object_type]
-    oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+    oid = spec_to_oid(spec)
     kwargs: dict[str, Any] = {
         "objectIdentifier": oid,
         "objectName": spec.object_name,

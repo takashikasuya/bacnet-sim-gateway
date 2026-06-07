@@ -21,8 +21,11 @@ def served_status(sample_pointlist, free_port):
     bapp = build_application(cfg, with_network=False)
     handler = RingBufferLogHandler()
     status = StatusProvider(
-        config=cfg, app=bapp, bound=False,
-        get_manager=lambda: None, log_handler=handler,
+        config=cfg,
+        app=bapp,
+        bound=False,
+        get_manager=lambda: None,
+        log_handler=handler,
     )
     client = TestClient(create_app(bapp, cfg, status=status))
     try:

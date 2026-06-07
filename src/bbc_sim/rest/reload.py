@@ -101,10 +101,7 @@ class PointListReloader:
                 "status": "restart_required",
                 "diff": _diff_dict(diff),
                 "errors": [],
-                "hint": (
-                    f"bbc-sim run -c {self._source} "
-                    f"--mode {self._runtime.config.mode.value}"
-                ),
+                "hint": (f"bbc-sim run -c {self._source} --mode {self._runtime.config.mode.value}"),
             }
 
         _apply_live(self._runtime, new_cfg, diff)
@@ -130,9 +127,7 @@ def _diff_dict(diff: ReloadDiff) -> dict[str, Any]:
 
 
 def _apply_live(runtime: Runtime, new_cfg: SimulatorConfig, diff: ReloadDiff) -> None:
-    from bacpypes3.primitivedata import ObjectIdentifier
-
-    from bbc_sim.bacnet_objects.builder import _OID_TYPE, build_object
+    from bbc_sim.bacnet_objects.builder import build_object, spec_to_oid
     from bbc_sim.simulator_runtime.app import compute_writable_oids
 
     app = runtime.app
@@ -140,9 +135,7 @@ def _apply_live(runtime: Runtime, new_cfg: SimulatorConfig, diff: ReloadDiff) ->
     new_map = {s.point_id: s for s in new_cfg.objects}
 
     for pid in diff.removed:
-        spec = old_map[pid]
-        oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
-        obj = app.get_object_id(oid)
+        obj = app.get_object_id(spec_to_oid(old_map[pid]))
         if obj is not None:
             app.delete_object(obj)
 
@@ -151,14 +144,17 @@ def _apply_live(runtime: Runtime, new_cfg: SimulatorConfig, diff: ReloadDiff) ->
 
     for pid in diff.modified_live:
         spec = new_map[pid]
-        oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
-        obj = app.get_object_id(oid)
+        obj = app.get_object_id(spec_to_oid(spec))
         if obj is None:
             continue
         obj.description = spec.description
+        if spec.tags != old_map[pid].tags:
+            from bacpypes3.basetypes import NameValue
+
+            obj.tags = [NameValue(name=t) for t in spec.tags]
 
     # Rebuild writable OID set from new objects
-    app._writable_oids = compute_writable_oids(new_cfg)
+    app.set_writable_oids(compute_writable_oids(new_cfg))
 
     # Rebuild simulation generators for the new object set
     if runtime.engine is not None:

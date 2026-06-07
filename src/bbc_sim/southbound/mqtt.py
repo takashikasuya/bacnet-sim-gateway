@@ -1,8 +1,15 @@
-"""MQTT southbound transport (paho-mqtt). Real network I/O; tests are integration.
+"""MQTT southbound transport (paho-mqtt).
 
 Bridges paho's threaded callbacks onto the asyncio loop so the Core Object Model stays
 event-loop-confined (ADR-010): inbound messages are scheduled with
 ``run_coroutine_threadsafe``.
+
+Thread boundary: ``subscribe``/``publish`` run on the asyncio thread, while
+``_on_message`` is invoked on paho's network thread. ``_handlers`` is therefore
+guarded by ``self._lock`` (snapshotted under the lock before dispatch), and handler
+coroutines are handed back to the asyncio loop rather than run on paho's thread.
+Real broker I/O is covered by the integration suite; ``_on_message`` dispatch and the
+subscribe/publish forwarding are unit-tested with the paho client mocked.
 """
 
 from __future__ import annotations
