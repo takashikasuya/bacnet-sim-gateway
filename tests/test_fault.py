@@ -79,11 +79,11 @@ def test_tryset_swallows_unsupported_attribute_but_logs(caplog):
 
     class _NoReliability:
         @property
-        def reliability(self):  # noqa: ANN
+        def reliability(self):
             return None
 
         @reliability.setter
-        def reliability(self, value):  # noqa: ANN
+        def reliability(self, value):
             raise AttributeError("object has no reliability")
 
     obj = _NoReliability()
@@ -103,11 +103,11 @@ def test_apply_fault_on_object_without_reliability_does_not_raise():
             self.eventState = "normal"
 
         @property
-        def reliability(self):  # noqa: ANN
+        def reliability(self):
             return None
 
         @reliability.setter
-        def reliability(self, value):  # noqa: ANN
+        def reliability(self, value):
             raise ValueError("unsupported")
 
     obj = _Obj()
