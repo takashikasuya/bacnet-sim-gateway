@@ -75,7 +75,9 @@ class SouthboundManager:
 
     def status(self) -> dict[str, Any]:
         """Return per-protocol connection state and per-point last telemetry."""
-        connected = getattr(self.transport, "_started", True)
+        # Default to False: a transport with no _started attribute is reported as
+        # disconnected until start() is observed, rather than falsely "connected".
+        connected = getattr(self.transport, "_started", False)
         protocols: list[dict[str, Any]] = []
         seen: set[str] = set()
         for spec in self.config.objects:

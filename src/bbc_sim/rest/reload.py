@@ -76,7 +76,7 @@ class PointListReloader:
             return {
                 "status": "no_source",
                 "diff": None,
-                "errors": ["no source path; start bbc-sim run with --source-path"],
+                "errors": ["no source path; start with bbc-sim run -c <simulator.yaml>"],
             }
         try:
             new_cfg = load_config(self._source)

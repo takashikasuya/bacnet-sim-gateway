@@ -67,11 +67,18 @@
 <script>
 const pointId = {{ obj.point_id | tojson }};
 
+// Coerce to a number only when the whole string is a finite number, so "0" stays
+// numeric 0 (parseFloat("0")||val would fall back to the string "0").
+function coerceValue(raw) {
+  const n = Number(raw);
+  return raw.trim() !== '' && Number.isFinite(n) ? n : raw;
+}
+
 document.getElementById('write-form')?.addEventListener('submit', async function(e) {
   e.preventDefault();
   if (!confirm('present_value を変更します。よろしいですか？')) return;
   const val = document.getElementById('write-value').value;
-  const res = await postJson('/objects/' + pointId + '/write', {value: parseFloat(val) || val});
+  const res = await postJson('/objects/' + pointId + '/write', {value: coerceValue(val)});
   document.getElementById('write-result').innerHTML =
     res.ok ? '<span class="ok">✓ 書込み成功: ' + (await res.json()).present_value + '</span>'
            : '<span class="err">✗ エラー: ' + res.status + '</span>';
@@ -83,7 +90,7 @@ document.getElementById('fault-form')?.addEventListener('submit', async function
   if (!confirm('Fault注入: ' + faultType + ' を適用します。')) return;
   const faultVal = document.getElementById('fault-value').value;
   const body = {point_id: pointId, fault: faultType};
-  if (faultVal) body.value = parseFloat(faultVal) || faultVal;
+  if (faultVal) body.value = coerceValue(faultVal);
   const res = await postJson('/simulation/scenario', body);
   document.getElementById('fault-result').innerHTML =
     res.ok ? '<span class="ok">✓ 適用済み</span>'

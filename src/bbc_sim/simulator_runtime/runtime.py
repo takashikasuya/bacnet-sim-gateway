@@ -39,6 +39,7 @@ class Runtime:
         self.rest_port = rest_port
         self.source_path = source_path
         self.ui_enabled = ui_enabled
+        self.with_network = with_network  # northbound BACnet/IP datalink is live
         self.faults = FaultController()
         self.app: BBCApplication = build_application(config, with_network=with_network)
 
@@ -90,7 +91,7 @@ class Runtime:
             status = StatusProvider(
                 config=self.config,
                 app=self.app,
-                bound=True,  # build_application was called with with_network default
+                bound=self.with_network,  # reflect the actual BACnet/IP bind state
                 get_manager=lambda: self.manager,
                 log_handler=self._log_handler,
             )

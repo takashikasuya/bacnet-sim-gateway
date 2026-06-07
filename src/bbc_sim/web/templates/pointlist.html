@@ -8,7 +8,7 @@
 
 <div class="info-card">
   <table class="prop-table">
-    <tr><th>ソースパス</th><td><code>{{ info.source_path or '未設定 (--source-path で指定)' }}</code></td></tr>
+    <tr><th>ソースパス</th><td><code>{{ info.source_path or '未設定 (bbc-sim run -c <simulator.yaml> で指定)' }}</code></td></tr>
     <tr><th>オブジェクト数</th><td>{{ info.object_count }}</td></tr>
     <tr><th>最終再読込</th><td>{{ info.last_reload_ts | round(1) if info.last_reload_ts else '—' }}</td></tr>
     <tr><th>最終結果</th><td>{{ info.last_result or '—' }}</td></tr>

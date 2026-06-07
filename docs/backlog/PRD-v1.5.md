@@ -20,7 +20,7 @@
 | v1.3 | 各 BACnet オブジェクトに**セマンティックタグ（`tags` プロパティ）**を付与する要求を追加。SBCO `tags` 列から決定的に生成し、語彙は **BACnet 標準タグ ＋ Project Haystack** を既定（将来 ASHRAE 223P へ連携） |
 | v1.4 | **Raspberry Pi（ARM）でのネイティブ実行**を要求化（PR-NF-019/020）。Docker は配布手段の一つであり必須ではない。SBCO 原典リポジトリの URL を明記 |
 | v1.5 | 設計 grill (2026-06-07) の確定を反映: **device-mapping mode**（aggregated/multi-device/auto-partition, PR-F-091〜094, CON-8）、**BACnet タグの Brick 由来生成**（PR-F-017 改, AC-14 改）、**南向きアドレス local_id 第一**（PR-F-090 改）。SBCO 原典の事実補正（labels/scale/`&&`/point_type 意味論）。決定: ADR-009〜012、ADR-002/006/007/008 改訂 |
-| v1.6 | **管理者向け Web UI** を追加（EP-007 / MVP-2）。PR-F-053〜057 を新設し PR-F-052 を「任意」から正式要求（S）へ格上げ。北向きは BACnet/IP 稼働状態の内省のみ（ADR-005 厳守、上流プローブなし）、軽量サーバレンダリング（Jinja2/HTMX・jinja2 のみ追加・Pi ネイティブ）、初回利用者向けオンボーディングを必須化。AC-15/16 追加。MVP は localhost/LAN・認証なし（認証/外部公開は将来 EPIC） |
+| v1.6 | **管理者向け Web UI** を追加（EP-007 / MVP-2）。PR-F-053〜057 を新設し PR-F-052 を「任意」から正式要求（S）へ格上げ。北向きは BACnet/IP 稼働状態の内省のみ（ADR-005 厳守、上流プローブなし）、軽量サーバレンダリング（Jinja2 + 素の JS fetch・jinja2 のみ追加・Pi ネイティブ）、初回利用者向けオンボーディングを必須化。AC-15/16 追加。MVP は localhost/LAN・認証なし（認証/外部公開は将来 EPIC） |
 
 ---
 

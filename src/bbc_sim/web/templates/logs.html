@@ -24,10 +24,14 @@
 {% endblock %}
 {% block scripts %}
 <script>
-let logTimer = setInterval(refreshLogs, 5000);
+// The interval is gated on the auto-refresh checkbox; a direct call (e.g. the
+// level <select> onchange) always performs a fetch so manual refresh still works
+// while auto-refresh is off.
+setInterval(() => {
+  if (document.getElementById('auto-refresh').checked) refreshLogs();
+}, 5000);
 
 function refreshLogs() {
-  if (!document.getElementById('auto-refresh').checked) return;
   const level = document.getElementById('log-level').value;
   const url = '/ui/partials/logtail' + (level ? '?level=' + level : '');
   fetchPartial(url, 'logtail');

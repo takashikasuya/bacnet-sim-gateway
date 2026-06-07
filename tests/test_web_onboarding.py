@@ -100,8 +100,16 @@ def test_context_help_dashboard_content(help_client):
 
 
 def test_context_help_unknown_page(help_client):
+    # Unknown but charset-valid name → 404 with a generic body (no echo of input).
     resp = help_client.get("/ui/partials/help/nonexistent_page_xyz")
-    assert resp.status_code == 200  # falls back to a message, not 404
+    assert resp.status_code == 404
+
+
+def test_context_help_rejects_unsafe_name(help_client):
+    # A name with markup characters must be rejected without being echoed back.
+    resp = help_client.get("/ui/partials/help/%3Cscript%3E")
+    assert resp.status_code == 404
+    assert "<script>" not in resp.text
 
 
 def test_empty_objects_partial(sample_pointlist, free_port):

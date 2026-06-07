@@ -9,6 +9,7 @@ Data for partials is built inline in each handler using shared helper functions.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -216,11 +217,14 @@ def create_web_router(
     @router.get("/partials/help/{page_name}", response_class=HTMLResponse)
     def context_help(request: Request, page_name: str) -> Any:
         ctx = _base_ctx(request)
-        safe_name = page_name.replace("/", "").replace(".", "")
-        tpl = f"partials/_help_{safe_name}.html"
+        # Restrict to a conservative charset so the name can never carry markup;
+        # never echo the raw URL segment back into the HTML body (reflected-XSS guard).
+        if not re.fullmatch(r"[a-z_]{1,40}", page_name):
+            return HTMLResponse("<p>Help page not found.</p>", status_code=404)
+        tpl = f"partials/_help_{page_name}.html"
         try:
             return _templates.TemplateResponse(request, tpl, context=ctx)
         except Exception:
-            return HTMLResponse(f"<p>Help for <b>{safe_name}</b> not found.</p>")
+            return HTMLResponse("<p>Help page not found.</p>", status_code=404)
 
     return router

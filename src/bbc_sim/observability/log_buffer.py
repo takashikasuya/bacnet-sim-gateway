@@ -1,8 +1,10 @@
 """Ring-buffer log handler for the admin UI (EP-007.1, PR-F-053).
 
-emit() appends a LogEntry to a bounded deque — no I/O, no locks beyond CPython's
-deque-append atomicity.  Formatting is deferred to snapshot() so the hot path stays
-a bare struct fill (ADR-010: must not block the asyncio loop).
+emit() stores the record's plain message via record.getMessage() and appends a
+LogEntry to a bounded deque — no formatter, no exception formatting, no I/O on the
+hot path (ADR-010: must not block the asyncio loop).  snapshot() (the cold read
+path) copies the deque under the handler lock before filtering so a concurrent emit
+cannot raise "deque mutated during iteration".
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ class LogEntry:
     ts: float    # time.time() at record creation
     level: str   # LEVELNAME string
     logger: str  # record.name
-    message: str # formatted message (no exc_info)
+    message: str # plain message (no formatter, no exc_info)
 
 
 class RingBufferLogHandler(logging.Handler):
@@ -27,9 +29,9 @@ class RingBufferLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
-            msg = self.format(record)
-        except Exception:  # noqa: BLE001
             msg = record.getMessage()
+        except Exception:  # noqa: BLE001 - never let a bad record kill the loop
+            msg = str(record.msg)
         self.records.append(
             LogEntry(ts=record.created, level=record.levelname,
                      logger=record.name, message=msg)
@@ -41,9 +43,15 @@ class RingBufferLogHandler(logging.Handler):
         since: float | None = None,
         limit: int | None = None,
     ) -> list[LogEntry]:
-        """Return filtered, time-ordered entries (newest-last)."""
+        """Return filtered, time-ordered entries (newest-last).
+
+        Copies the deque under the handler lock first so a concurrent emit() cannot
+        mutate it mid-iteration.
+        """
+        with self.lock:  # type: ignore[union-attr]  # Handler.lock is set in __init__
+            items = list(self.records)
         entries: list[LogEntry] = []
-        for e in self.records:
+        for e in items:
             if level and e.level != level.upper():
                 continue
             if since is not None and e.ts <= since:
