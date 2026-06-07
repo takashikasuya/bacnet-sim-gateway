@@ -21,7 +21,7 @@
 ## 2. 取得（Acquisition）✅（reuse: `src/bbc_sim/services/client.py`）
 
 - **Discovery**: `whois(app, target)` で対象 B-BC（device instance, address）を取得。
-- **列挙**: `list_objects(app, target)` で object-list を取得（device/network-port を除外）。
+- **列挙**: `list_objects(app, target)` で object-list を取得する（同関数は object-list を**そのまま**返す）。コネクタ側で device / network-port オブジェクトを**除外**してから読取対象とする。
 - **読取**: `read_property_multiple` で各オブジェクトの `present-value`（必要に応じ `units`/`object-name`）を取得。
 - **更新方式**: 既定はポーリング（`interval` 秒）🔧。`subscribe_cov` による COV 駆動は任意（❓ 既定の採否）。
 - B-BC は読み取り対象（BACnet クライアントとして動作）。書込（下り制御）は本仕様の対象外（§7）。
@@ -107,7 +107,8 @@
 ## 4. トランスポート / トピック ✅（MQTT 先行・[[ADR-015]]）
 
 - **MQTT（Mosquitto）**: `telemetry/{tenant}/{deviceId}` に publish。`tenant` 既定 `default`。
-  認証は user/pass（既定 `devices`/`buildingos-devices`、本番は要設定）🔧。
+  認証は user/pass を**外部 secret（環境変数 / secret store）から注入**する。仕様・実装ともに
+  **既定パスワードは持たない**（資格情報を文書やコードに固定しない）🔧。
 - 配信は `southbound/transport.py` の `Transport` を再利用（InMemory=CI、`MqttTransport`=実機）。
 - **AMQP 1.0（Hono northbound）**: アドレス `/telemetry/{tenant}`、メッセージ属性 `device_id` /
   `orig_address`。後続実装（§7, 将来 issue）。
@@ -124,7 +125,7 @@
 - 生成 JSON が §3.1 スキーマに適合（必須項目・型）。
 - ObjectType enum がオブジェクト型と一致。
 - TimeStamp が ISO-8601（TZ 付き）。
-- integration: 実 Mosquitto に publish → Building OS の golden fixtures（`tests/golden/`）と整合確認。
+- integration: 実 Mosquitto に publish → Building OS の golden fixtures（**Building OS 側リポジトリ `gutp-building-os-oss` の** `tests/golden/`。本リポジトリ内のパスではない）と整合確認。
 
 ## 7. 将来（本仕様の対象外）❓
 
