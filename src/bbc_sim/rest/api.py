@@ -14,7 +14,7 @@ from bacpypes3.primitivedata import ObjectIdentifier
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from bbc_sim.bacnet_objects.builder import _OID_TYPE
+from bbc_sim.bacnet_objects.builder import spec_to_oid
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.simulation.fault import FaultController, FaultType
 from bbc_sim.simulator_runtime.app import BBCApplication
@@ -47,8 +47,7 @@ def create_app(
         return {s.point_id: s for s in config.objects}
 
     def _oid(point_id: str, specs: dict[str, Any]) -> ObjectIdentifier:
-        spec = specs[point_id]
-        return ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+        return spec_to_oid(specs[point_id])
 
     def _object_view(point_id: str, specs: dict[str, Any] | None = None) -> dict[str, Any]:
         if specs is None:

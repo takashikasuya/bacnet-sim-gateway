@@ -25,14 +25,11 @@ _templates = Jinja2Templates(directory=str(_HERE / "templates"))
 
 
 def _obj_list(config: Any, app: Any) -> list[dict[str, Any]]:
-    from bacpypes3.primitivedata import ObjectIdentifier
-
-    from bbc_sim.bacnet_objects.builder import _OID_TYPE
+    from bbc_sim.bacnet_objects.builder import spec_to_oid
 
     result = []
     for spec in config.objects:
-        oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
-        obj = app.get_object_id(oid)
+        obj = app.get_object_id(spec_to_oid(spec))
         pv = getattr(obj, "presentValue", None)
         oos = bool(getattr(obj, "outOfService", False))
         flags = list(getattr(obj, "statusFlags", []) or [])

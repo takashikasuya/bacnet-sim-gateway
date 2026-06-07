@@ -21,9 +21,8 @@ from bacpypes3.apdu import (
 from bacpypes3.app import Application
 from bacpypes3.basetypes import ErrorType, ObjectPropertyReference
 from bacpypes3.errors import ExecutionError
-from bacpypes3.primitivedata import ObjectIdentifier
 
-from bbc_sim.bacnet_objects.builder import _OID_TYPE, build_object_list
+from bbc_sim.bacnet_objects.builder import build_object_list, oid_key
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.yaml_generator.yaml_io import load_config
 
@@ -47,14 +46,7 @@ class Counters:
 
 def compute_writable_oids(config: SimulatorConfig) -> frozenset[tuple[str, int]]:
     """Derive the writable-OID frozenset from config (used by build_application and reload)."""
-    return frozenset(
-        (
-            str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
-            spec.object_instance,
-        )
-        for spec in config.objects
-        if spec.writable
-    )
+    return frozenset(oid_key(spec) for spec in config.objects if spec.writable)
 
 
 class BBCApplication(Application):

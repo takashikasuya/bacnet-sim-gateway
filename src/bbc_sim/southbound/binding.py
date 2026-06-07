@@ -12,9 +12,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from bacpypes3.app import Application
-from bacpypes3.primitivedata import ObjectIdentifier
 
-from bbc_sim.bacnet_objects.builder import _OID_TYPE
+from bbc_sim.bacnet_objects.builder import oid_key, spec_to_oid
 from bbc_sim.models import BacnetObjectSpec, BindingDirection, SimulatorConfig
 from bbc_sim.southbound.address import derive_address, mqtt_topics
 from bbc_sim.southbound.mapping import present_value_to_command, telemetry_to_present_value
@@ -28,14 +27,6 @@ class TelemetryRecord:
     ts: float
     value: Any
     quality: str  # "good" | "bad"
-
-
-def _oid_key(spec: BacnetObjectSpec) -> tuple[str, int]:
-    """Match the (dash-type, instance) key used by BBCApplication."""
-    return (
-        str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
-        spec.object_instance,
-    )
 
 
 def channels(spec: BacnetObjectSpec) -> tuple[str, str]:
@@ -66,7 +57,7 @@ class SouthboundManager:
             if direction in (BindingDirection.telemetry, BindingDirection.both):
                 self.transport.subscribe(tele, self._telemetry_handler(spec))
             if direction in (BindingDirection.command, BindingDirection.both):
-                self._command_channel[_oid_key(spec)] = (spec, cmd)
+                self._command_channel[oid_key(spec)] = (spec, cmd)
 
         # Register the command hook + command-bound set on the application.
         self.app.on_command = self._on_command  # type: ignore[attr-defined]
@@ -105,7 +96,7 @@ class SouthboundManager:
         return {"active": True, "protocols": protocols, "points": points}
 
     def _telemetry_handler(self, spec: BacnetObjectSpec):
-        oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+        oid = spec_to_oid(spec)
 
         async def handler(_channel: str, payload: bytes) -> None:
             try:
@@ -124,8 +115,8 @@ class SouthboundManager:
 
         return handler
 
-    async def _on_command(self, oid_key: tuple[str, int], present_value: Any) -> None:
-        entry = self._command_channel.get(oid_key)
+    async def _on_command(self, key: tuple[str, int], present_value: Any) -> None:
+        entry = self._command_channel.get(key)
         if not entry:
             return
         spec, channel = entry
