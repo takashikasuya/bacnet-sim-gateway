@@ -60,6 +60,8 @@ SBCO Point List (CSV/XLSX) → YAML Generator → simulator.yaml → B-BC Runtim
 ```
 BOWS の MQTT/AMQP は B-BC のインターフェースではなく**コネクタ→Building OS のリンク**。B-BC の方向定義（[[ADR-005]]）は不変。
 
+> 代表的な通信フローのシーケンス図は `../specs/communication-sequences.md` を参照。
+
 ## 主要制約
 
 - 1 ランタイムインスタンス = 1 B-BC（コンテナ/プロセス共通・[[ADR-002]][[ADR-008]]）
