@@ -72,7 +72,10 @@ async def test_publish_maps_channel_to_address_and_attributes(monkeypatch):
         captured.update(address=address, payload=payload, attrs=attrs)
 
     monkeypatch.setattr(t, "_send", fake_send)
-    await t.publish("telemetry/default/bbc-local-001", b"{}")
+    try:
+        await t.publish("telemetry/default/bbc-local-001", b"{}")
+    finally:
+        await t.stop()
 
     assert captured["address"] == "/telemetry/default"
     assert captured["payload"] == b"{}"
@@ -80,6 +83,54 @@ async def test_publish_maps_channel_to_address_and_attributes(monkeypatch):
         "device_id": "bbc-local-001",
         "orig_address": "telemetry/default/bbc-local-001",
     }
+
+
+# ---- robustness / fail-fast (PR #66 review) ----
+
+
+def test_subscribe_raises_not_implemented():
+    # AMQP has no receive loop yet; subscribing must fail fast, not silently drop.
+    t = AmqpTransport("hono.example")
+    with pytest.raises(NotImplementedError):
+        t.subscribe("telemetry/default/x", lambda _c, _p: None)
+    t._executor.shutdown(wait=False)
+
+
+def test_send_before_start_raises_runtime_error_not_import_error():
+    # _conn is checked before importing proton, so the error is the intended hint,
+    # not a ModuleNotFoundError when the optional extra is absent.
+    t = AmqpTransport("hono.example")
+    with pytest.raises(RuntimeError, match="before start"):
+        t._send("/telemetry/default", b"{}", {})
+    t._executor.shutdown(wait=False)
+
+
+async def test_start_requires_both_credentials_or_neither(monkeypatch):
+    monkeypatch.setenv("BOWS_AMQP_USER", "devices")
+    monkeypatch.delenv("BOWS_AMQP_PASSWORD", raising=False)
+    t = AmqpTransport("hono.example")
+    try:
+        with pytest.raises(RuntimeError, match="must be set together"):
+            await t.start()
+    finally:
+        await t.stop()
+
+
+async def test_start_without_proton_gives_install_hint(monkeypatch):
+    # proton is not installed in CI/dev (optional extra); _connect must surface the
+    # actionable install hint rather than a raw ModuleNotFoundError.
+    import importlib.util
+
+    if importlib.util.find_spec("proton") is not None:
+        pytest.skip("proton installed; install-hint path not exercised")
+    monkeypatch.delenv("BOWS_AMQP_USER", raising=False)
+    monkeypatch.delenv("BOWS_AMQP_PASSWORD", raising=False)
+    t = AmqpTransport("hono.example")
+    try:
+        with pytest.raises(RuntimeError, match="amqp"):
+            await t.start()
+    finally:
+        await t.stop()
 
 
 async def test_credentials_read_from_env(monkeypatch):

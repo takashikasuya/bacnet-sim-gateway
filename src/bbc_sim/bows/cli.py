@@ -22,7 +22,7 @@ def register(app: typer.Typer) -> None:
         transport: str = typer.Option(
             "memory",
             "--transport",
-            help="transport URI (mqtt://host:port | amqps://host:port | memory)",
+            help="transport URI (mqtt://host:port | amqp[s]://host:port | memory)",
         ),
         interval: float = typer.Option(60.0, "--interval", help="poll interval seconds"),
         local: str | None = typer.Option(None, "--local", help="local BACnet bind host:port"),

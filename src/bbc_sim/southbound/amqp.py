@@ -15,11 +15,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from bbc_sim.southbound.transport import Handler
 
 _log = logging.getLogger(__name__)
+
+_INSTALL_HINT = "AMQP transport needs the optional 'amqp' extra — run: uv sync --extra amqp"
 
 
 def hono_address(channel: str) -> str:
@@ -57,19 +60,28 @@ class AmqpTransport:
         self.user = os.environ.get("BOWS_AMQP_USER")
         self.password = os.environ.get("BOWS_AMQP_PASSWORD")
         self._conn: Any = None
-        self._handlers: dict[str, list[Handler]] = {}
+        # qpid-proton's BlockingConnection is not safe for concurrent multi-thread
+        # use, so serialize every proton call onto one dedicated worker thread.
+        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="bows-amqp")
 
     @property
     def url(self) -> str:
         scheme = "amqps" if self.tls else "amqp"
         return f"{scheme}://{self.host}:{self.port}"
 
+    async def _run(self, fn: Any, *args: Any) -> Any:
+        return await asyncio.get_running_loop().run_in_executor(self._executor, fn, *args)
+
     async def start(self) -> None:
-        await asyncio.get_running_loop().run_in_executor(None, self._connect)
+        await self._run(self._connect)
 
     def _connect(self) -> None:
-        from proton.utils import BlockingConnection  # lazy: optional dep
-
+        if (self.user is None) != (self.password is None):
+            raise RuntimeError("BOWS_AMQP_USER and BOWS_AMQP_PASSWORD must be set together")
+        try:
+            from proton.utils import BlockingConnection  # lazy: optional dep
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(_INSTALL_HINT) from exc
         opts: dict[str, Any] = {}
         if self.user is not None:
             opts["user"] = self.user
@@ -78,23 +90,33 @@ class AmqpTransport:
 
     async def stop(self) -> None:
         if self._conn is not None:
-            conn, self._conn = self._conn, None
-            await asyncio.get_running_loop().run_in_executor(None, conn.close)
+            await self._run(self._close)
+        self._executor.shutdown(wait=False)
+
+    def _close(self) -> None:
+        conn, self._conn = self._conn, None
+        if conn is not None:
+            conn.close()
 
     def subscribe(self, channel: str, handler: Handler) -> None:
-        # Telemetry path is publish-only; subscribe is reserved for down-link (EP-008 #49).
-        self._handlers.setdefault(channel, []).append(handler)
+        # Telemetry is publish-only; there is no AMQP receive loop yet. Fail fast rather
+        # than silently dropping inbound messages — down-link/subscribe is EP-008 #49.
+        raise NotImplementedError(
+            "AmqpTransport is telemetry publish-only; down-link/subscribe is EP-008 #49"
+        )
 
     async def publish(self, channel: str, payload: bytes) -> None:
         address = hono_address(channel)
         attrs = {"device_id": device_id_from_channel(channel), "orig_address": channel}
-        await asyncio.get_running_loop().run_in_executor(None, self._send, address, payload, attrs)
+        await self._run(self._send, address, payload, attrs)
 
     def _send(self, address: str, payload: bytes, attrs: dict[str, Any]) -> None:
-        from proton import Message  # lazy: optional dep
-
         if self._conn is None:
             raise RuntimeError("AmqpTransport.publish() called before start()")
+        try:
+            from proton import Message  # lazy: optional dep
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(_INSTALL_HINT) from exc
         sender = self._conn.create_sender(address)
         try:
             msg = Message(body=payload)
