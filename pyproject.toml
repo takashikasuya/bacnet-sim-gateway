@@ -19,10 +19,13 @@ dependencies = [
 [project.scripts]
 bbc-sim = "bbc_sim.cli:app"
 
-[project.optional-dependencies]
+# Single source of truth for dev tooling (PEP 735). `uv sync` installs this
+# group by default — no `--extra` needed (EP-009.1).
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
     "ruff>=0.5",
     "mypy>=1.10",
     "types-PyYAML>=6.0",
@@ -58,11 +61,3 @@ python_version = "3.12"
 packages = ["bbc_sim"]
 mypy_path = "src"
 ignore_missing_imports = true
-
-[dependency-groups]
-dev = [
-    "httpx>=0.28.1",
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.4.0",
-    "types-pyyaml>=6.0.12.20260518",
-]
