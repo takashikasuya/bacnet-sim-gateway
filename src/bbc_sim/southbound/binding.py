@@ -9,15 +9,16 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
-
-from bacpypes3.app import Application
+from typing import TYPE_CHECKING, Any
 
 from bbc_sim.bacnet_objects.builder import oid_key, spec_to_oid
 from bbc_sim.models import BacnetObjectSpec, BindingDirection, SimulatorConfig
 from bbc_sim.southbound.address import derive_address, mqtt_topics
 from bbc_sim.southbound.mapping import present_value_to_command, telemetry_to_present_value
 from bbc_sim.southbound.transport import Transport
+
+if TYPE_CHECKING:
+    from bbc_sim.simulator_runtime.app import BBCApplication
 
 _log = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def channels(spec: BacnetObjectSpec) -> tuple[str, str]:
 class SouthboundManager:
     """Manage southbound bindings for a running B-BC."""
 
-    def __init__(self, app: Application, config: SimulatorConfig, transport: Transport):
+    def __init__(self, app: BBCApplication, config: SimulatorConfig, transport: Transport):
         self.app = app
         self.config = config
         self.transport = transport
@@ -60,8 +61,8 @@ class SouthboundManager:
                 self._command_channel[oid_key(spec)] = (spec, cmd)
 
         # Register the command hook + command-bound set on the application.
-        self.app.on_command = self._on_command  # type: ignore[attr-defined]
-        self.app._command_oids = frozenset(self._command_channel)  # type: ignore[attr-defined]
+        self.app.set_command_hook(self._on_command)
+        self.app.set_command_oids(frozenset(self._command_channel))
 
     async def stop(self) -> None:
         await self.transport.stop()

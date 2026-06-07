@@ -150,7 +150,7 @@ def _apply_live(runtime: Runtime, new_cfg: SimulatorConfig, diff: ReloadDiff) ->
         obj.description = spec.description
 
     # Rebuild writable OID set from new objects
-    app._writable_oids = compute_writable_oids(new_cfg)
+    app.set_writable_oids(compute_writable_oids(new_cfg))
 
     # Rebuild simulation generators for the new object set
     if runtime.engine is not None:

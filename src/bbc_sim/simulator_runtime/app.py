@@ -62,6 +62,20 @@ class BBCApplication(Application):
     on_command: CommandHook | None = None
     counters: Counters  # set by build_application
 
+    # --- configuration accessors (keep callers off private attributes) ---
+
+    def set_writable_oids(self, oids: frozenset[tuple[str, int]]) -> None:
+        """Set the OIDs whose present-value accepts WriteProperty (AC-5)."""
+        self._writable_oids = oids
+
+    def set_command_oids(self, oids: frozenset[tuple[str, int]]) -> None:
+        """Set the OIDs that forward northbound writes to the command hook."""
+        self._command_oids = oids
+
+    def set_command_hook(self, hook: CommandHook | None) -> None:
+        """Register (or clear) the southbound command-forwarding hook."""
+        self.on_command = hook
+
     async def do_WhoIsRequest(self, apdu: Any) -> None:  # type: ignore[override]
         self.counters.who_is += 1
         await super().do_WhoIsRequest(apdu)  # type: ignore[misc]
@@ -128,7 +142,7 @@ def build_application(config: SimulatorConfig, *, with_network: bool = True) -> 
     objects = build_object_list(config, with_network=with_network)
     app = BBCApplication.from_object_list(objects)
     app.counters = Counters()
-    app._writable_oids = compute_writable_oids(config)
+    app.set_writable_oids(compute_writable_oids(config))
     return app
 
 
