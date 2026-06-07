@@ -479,7 +479,7 @@ EP-006  export/{artifacts,cli}</pre>
   </details>
   <details>
     <summary>検証（CLI 一巡 — quickstart）</summary>
-    <pre>uv sync --extra dev
+    <pre>uv sync
 uv run bbc-sim generate-yaml -i tests/fixtures/sample_pointlist.csv -o config/simulator.yaml
 uv run bbc-sim validate -c config/simulator.yaml
 uv run bbc-sim run -c config/simulator.yaml            # BACnet/IP 北向き
