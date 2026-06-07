@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}バインディング — bbc-sim Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>南向きバインディング</h1>
+  <button class="btn-sm" onclick="fetchPartial('/ui/partials/bindings_table','bindings-table')">更新</button>
+  <button class="btn-sm ctx-help-btn" data-page="bindings">?</button>
+</div>
+
+{% if not sb.active %}
+<div class="alert-info">
+  バインディングは非アクティブです。gateway または combined モードで
+  <code>--transport</code> オプションを指定して起動してください。
+</div>
+{% else %}
+<div id="bindings-table">
+  {% include "partials/_bindings_table.html" %}
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+  setInterval(() => fetchPartial('/ui/partials/bindings_table', 'bindings-table'), 5000);
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% if objects %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>point_id</th><th>型</th><th>instance</th><th>object_name</th>
+      <th>present_value</th><th>units</th><th>OOS</th><th>writable</th><th>binding</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for o in objects %}
+    <tr class="{% if o.out_of_service %}row-oos{% endif %}">
+      <td><a href="/ui/objects/{{ o.point_id }}">{{ o.point_id }}</a></td>
+      <td>{{ o.object_type }}</td>
+      <td>{{ o.object_instance }}</td>
+      <td>{{ o.object_name }}</td>
+      <td class="pv">{{ o.present_value }}</td>
+      <td>{{ o.units }}</td>
+      <td>{{ '⚠️' if o.out_of_service else '' }}</td>
+      <td>{{ '✏️' if o.writable else '' }}</td>
+      <td>{{ '🔗' if o.has_binding else '' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{% include "partials/_empty_objects.html" %}
+{% endif %}

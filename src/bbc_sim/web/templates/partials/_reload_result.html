@@ -1,0 +1,20 @@
+<div class="reload-result status-{{ result.status }}">
+  <strong>結果: {{ result.status }}</strong>
+  {% if result.errors %}
+  <ul class="error-list">
+    {% for e in result.errors %}<li>{{ e }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if result.diff %}
+  <div class="diff-summary">
+    <span class="added">追加: {{ result.diff.added | length }}</span>
+    <span class="removed">削除: {{ result.diff.removed | length }}</span>
+    <span class="modified">変更(ライブ適用): {{ result.diff.modified_live | length }}</span>
+    <span class="modified-restart">変更(再起動必要): {{ result.diff.modified_restart | length }}</span>
+  </div>
+  {% if result.hint %}
+  <p class="hint">💡 再起動コマンド: <code>{{ result.hint }}</code></p>
+  {% endif %}
+  {% endif %}
+</div>
+<p><a href="/ui/devices">オブジェクト一覧で確認 →</a></p>

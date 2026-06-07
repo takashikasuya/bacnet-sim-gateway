@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}ログ — bbc-sim Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>ログ</h1>
+  <button class="btn-sm ctx-help-btn" data-page="logs">?</button>
+</div>
+
+<form class="filter-form" id="log-filter">
+  <select id="log-level" onchange="refreshLogs()" class="input-sm">
+    <option value="" {% if not selected_level %}selected{% endif %}>全レベル</option>
+    <option value="DEBUG" {% if selected_level == 'DEBUG' %}selected{% endif %}>DEBUG</option>
+    <option value="INFO" {% if selected_level == 'INFO' %}selected{% endif %}>INFO</option>
+    <option value="WARNING" {% if selected_level == 'WARNING' %}selected{% endif %}>WARNING</option>
+    <option value="ERROR" {% if selected_level == 'ERROR' %}selected{% endif %}>ERROR</option>
+    <option value="CRITICAL" {% if selected_level == 'CRITICAL' %}selected{% endif %}>CRITICAL</option>
+  </select>
+  <label><input type="checkbox" id="auto-refresh" checked> 自動更新 (5s)</label>
+</form>
+
+<div id="logtail">
+  {% include "partials/_logtail.html" %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let logTimer = setInterval(refreshLogs, 5000);
+
+function refreshLogs() {
+  if (!document.getElementById('auto-refresh').checked) return;
+  const level = document.getElementById('log-level').value;
+  const url = '/ui/partials/logtail' + (level ? '?level=' + level : '');
+  fetchPartial(url, 'logtail');
+}
+</script>
+{% endblock %}

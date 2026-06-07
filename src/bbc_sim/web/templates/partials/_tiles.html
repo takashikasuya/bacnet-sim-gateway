@@ -1,0 +1,33 @@
+{% if runtime %}
+<div class="tiles">
+  <div class="tile tile-{{ 'ok' if runtime.bound else 'warn' }}">
+    <div class="tile-label">北向き BACnet/IP</div>
+    <div class="tile-value">{{ '🟢 Bound' if runtime.bound else '🔴 Unbound' }}</div>
+    <div class="tile-sub">{{ runtime.network.bind_address }}:{{ runtime.network.port }}</div>
+  </div>
+  <div class="tile tile-info">
+    <div class="tile-label">動作モード</div>
+    <div class="tile-value mode-{{ runtime.mode }}">{{ runtime.mode }}</div>
+    <div class="tile-sub">uptime {{ runtime.uptime_seconds }}s</div>
+  </div>
+  <div class="tile tile-info">
+    <div class="tile-label">オブジェクト数</div>
+    <div class="tile-value">{{ runtime.object_count }}</div>
+    <div class="tile-sub"><a href="/ui/devices">一覧 →</a></div>
+  </div>
+  <div class="tile tile-{{ 'ok' if runtime.southbound_active else 'muted' }}">
+    <div class="tile-label">南向きバインディング</div>
+    <div class="tile-value">{{ '🟢 Active' if runtime.southbound_active else '— Inactive' }}</div>
+    <div class="tile-sub"><a href="/ui/bindings">詳細 →</a></div>
+  </div>
+  {% if northbound %}
+  <div class="tile tile-info">
+    <div class="tile-label">BACnet 要求 (累計)</div>
+    <div class="tile-value">{{ northbound.counters.read_property + northbound.counters.write_property }}</div>
+    <div class="tile-sub">R:{{ northbound.counters.read_property }} W:{{ northbound.counters.write_property }}</div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="alert-warn">StatusProvider が設定されていません。</div>
+{% endif %}

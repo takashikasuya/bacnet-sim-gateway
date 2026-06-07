@@ -1,14 +1,15 @@
 """Assemble and run a full B-BC: BACnet/IP server + simulation engine + southbound
 binding + optional REST control plane (ADR-010 single loop).
 
-This is the single place that wires the EP-001..003 components together so `bbc-sim run`
-actually drives values, serves bindings, and exposes the control plane.
+This is the single place that wires the EP-001..007 components together so `bbc-sim run`
+actually drives values, serves bindings, and exposes the control plane and admin UI.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 from typing import Any
 
 from bbc_sim.models import RuntimeMode, SimulatorConfig
@@ -30,10 +31,14 @@ class Runtime:
         rest_port: int | None = None,
         tick_seconds: float = 1.0,
         with_network: bool = True,
+        source_path: Path | None = None,
+        ui_enabled: bool = False,
     ) -> None:
         self.config = config
         self.transport_uri = transport_uri
         self.rest_port = rest_port
+        self.source_path = source_path
+        self.ui_enabled = ui_enabled
         self.faults = FaultController()
         self.app: BBCApplication = build_application(config, with_network=with_network)
 
@@ -47,6 +52,11 @@ class Runtime:
         self.manager: Any = None  # SouthboundManager (gateway/combined)
         self._rest_server: Any = None  # uvicorn.Server
         self._rest_task: asyncio.Task[None] | None = None
+
+        # Observability: ring-buffer log handler (EP-007.1)
+        from bbc_sim.observability.log_buffer import RingBufferLogHandler
+        self._log_handler = RingBufferLogHandler(capacity=1000)
+        logging.getLogger("bbc_sim").addHandler(self._log_handler)
 
     async def start(self) -> None:
         if self.engine is not None:
@@ -74,11 +84,24 @@ class Runtime:
             import uvicorn
 
             from bbc_sim.rest.api import create_app
+            from bbc_sim.rest.reload import PointListReloader
+            from bbc_sim.rest.status import StatusProvider
 
-            api = create_app(self.app, self.config, self.faults)
-            config = uvicorn.Config(api, host="127.0.0.1", port=self.rest_port,
-                                    log_level="warning")
-            self._rest_server = uvicorn.Server(config)
+            status = StatusProvider(
+                config=self.config,
+                app=self.app,
+                bound=True,  # build_application was called with with_network default
+                get_manager=lambda: self.manager,
+                log_handler=self._log_handler,
+            )
+            reloader = PointListReloader(source_path=self.source_path, runtime=self)
+            api = create_app(
+                self.app, self.config, self.faults,
+                status=status, reloader=reloader, ui_enabled=self.ui_enabled,
+            )
+            uv_config = uvicorn.Config(api, host="127.0.0.1", port=self.rest_port,
+                                       log_level="warning")
+            self._rest_server = uvicorn.Server(uv_config)
             self._rest_task = asyncio.create_task(self._rest_server.serve())
 
     async def stop(self) -> None:
@@ -91,6 +114,7 @@ class Runtime:
         if self._rest_task is not None:
             await asyncio.gather(self._rest_task, return_exceptions=True)
         self.app.close()
+        logging.getLogger("bbc_sim").removeHandler(self._log_handler)
 
     async def run_forever(self, stop: asyncio.Event | None = None) -> None:
         stop = stop or asyncio.Event()
