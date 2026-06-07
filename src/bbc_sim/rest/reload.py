@@ -148,6 +148,10 @@ def _apply_live(runtime: Runtime, new_cfg: SimulatorConfig, diff: ReloadDiff) ->
         if obj is None:
             continue
         obj.description = spec.description
+        if spec.tags != old_map[pid].tags:
+            from bacpypes3.basetypes import NameValue
+
+            obj.tags = [NameValue(name=t) for t in spec.tags]
 
     # Rebuild writable OID set from new objects
     app.set_writable_oids(compute_writable_oids(new_cfg))

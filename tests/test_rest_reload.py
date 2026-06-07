@@ -58,6 +58,30 @@ def test_pointlist_reload_applied(reload_setup):
     assert data["errors"] == []
 
 
+def test_reload_live_applies_description_and_tags(reload_setup):
+    """Non-structural edits (description, tags) are applied to the live object (EP-009.5)."""
+    from bbc_sim.bacnet_objects.builder import spec_to_oid
+    from bbc_sim.yaml_generator.yaml_io import dump_config, load_config
+
+    _, reloader, cfg, source, runtime = reload_setup
+    pid = cfg.objects[0].point_id
+
+    # Edit the on-disk YAML: change description and tags for the first object.
+    on_disk = load_config(source)
+    on_disk.objects[0].description = "live-updated description"
+    on_disk.objects[0].tags = ["updated-tag"]
+    dump_config(on_disk, source)
+
+    result = reloader.apply()
+    assert result["status"] == "applied"
+    assert pid in result["diff"]["modified_live"]
+
+    obj = runtime.app.get_object_id(spec_to_oid(cfg.objects[0]))
+    assert str(obj.description) == "live-updated description"
+    tag_names = [str(getattr(t, "name", t)) for t in (obj.tags or [])]
+    assert "updated-tag" in tag_names
+
+
 def test_pointlist_reload_no_source(sample_pointlist, free_port):
     cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1001)
     cfg.network.bind_address = "127.0.0.1"
