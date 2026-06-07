@@ -160,6 +160,20 @@ uv run bbc-sim run -c config/simulator.yaml --mode gateway --transport memory://
 |---------|------|
 | `export -f <format> -c <yaml>` | 標準成果物の出力（[詳細](#標準成果物のエクスポート)） |
 
+### BOWS コネクタ（BACnet → Building OS, EP-008）
+
+仮想 B-BC を BACnet で読み取り、テレメトリを Building OS（`gutp-building-os-oss`）の
+BACnet ネイティブスキーマ `bacnet-device-message` で MQTT へ供給します（下流の独立コネクタ, ADR-014）。
+
+```bash
+# 仮想 B-BC を読み、telemetry/{tenant}/{deviceId} へ bacnet-device-message を publish
+uv run bbc-sim bows run -t 127.0.0.1:47808 -d bbc-local-001 --tenant default \
+  --transport mqtt://127.0.0.1:1883 --interval 10
+```
+
+スキーマ準拠は [ADR-015](docs/adr/ADR-015-buildingos-bacnet-schema-mqtt-first.md) /
+`docs/specs/northbound-bows-buildingos.md`。AMQP/Hono と下り制御は将来（#48 / #49）。
+
 ---
 
 ## Admin UI
