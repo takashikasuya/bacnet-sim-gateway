@@ -77,6 +77,31 @@ async def read_property_multiple(
     return await app.read_property_multiple(Address(target), [objid, props])
 
 
+async def read_present_values(app: Application, target: str, objids: list[str]) -> dict[str, Any]:
+    """RPM-read present-value for many objects in one request.
+
+    Returns ``{objid: value}`` keyed by the requested id strings (positional match
+    with the response, which bacpypes3 returns in request order). Objects that the
+    device reports an error for are omitted so the caller can fall back to a
+    per-object read. Raises if the whole RPM request fails.
+    """
+    from bacpypes3.basetypes import ErrorType
+
+    if not objids:
+        return {}
+    args: list[Any] = []
+    for objid in objids:
+        args.extend([objid, ["present-value"]])
+    results = await app.read_property_multiple(Address(target), args)
+    out: dict[str, Any] = {}
+    for objid, result in zip(objids, results, strict=False):
+        value = result[3] if isinstance(result, (list, tuple)) and len(result) >= 4 else None
+        if value is None or isinstance(value, ErrorType):
+            continue  # leave for per-object fallback
+        out[objid] = value
+    return out
+
+
 async def write_property(
     app: Application, target: str, objid: str, value: Any, prop: str = "present-value"
 ) -> None:
