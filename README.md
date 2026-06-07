@@ -174,8 +174,16 @@ uv run bbc-sim bows run -t 127.0.0.1:47808 -d bbc-local-001 --tenant default \
   --transport mqtt://127.0.0.1:1883 --interval 10
 ```
 
+```bash
+# Hono northbound へ AMQP 1.0 で送る場合（optional extra が必要）
+uv sync --extra amqp
+uv run bbc-sim bows run -t 127.0.0.1:47808 -d bbc-local-001 \
+  --transport amqps://hono.example:5671
+# 認証情報は環境変数 BOWS_AMQP_USER / BOWS_AMQP_PASSWORD から注入（既定値なし）
+```
+
 スキーマ準拠は [ADR-015](docs/adr/ADR-015-buildingos-bacnet-schema-mqtt-first.md) /
-`docs/specs/northbound-bows-buildingos.md`。AMQP/Hono と下り制御は将来（#48 / #49）。
+`docs/specs/northbound-bows-buildingos.md`。AMQP/Hono は optional（[ADR-016](docs/adr/ADR-016-bows-amqp-and-downlink-control.md)）。下り制御は将来（#49）。
 
 ---
 

@@ -19,6 +19,12 @@ dependencies = [
 [project.scripts]
 bbc-sim = "bbc_sim.cli:app"
 
+# Optional southbound/northbound transports. AMQP 1.0 (Hono) pulls in the native
+# qpid-proton; kept optional so the base install / CI / ARM stay minimal (ADR-016,
+# AGENTS.md §5). Install with: uv sync --extra amqp
+[project.optional-dependencies]
+amqp = ["python-qpid-proton>=0.39"]
+
 # Single source of truth for dev tooling (PEP 735). Installed by `uv sync`
 # because `dev` is listed in [tool.uv].default-groups below (EP-009.1).
 [dependency-groups]

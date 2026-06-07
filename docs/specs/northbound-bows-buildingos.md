@@ -110,8 +110,12 @@
   認証は user/pass を**外部 secret（環境変数 / secret store）から注入**する。仕様・実装ともに
   **既定パスワードは持たない**（資格情報を文書やコードに固定しない）🔧。
 - 配信は `southbound/transport.py` の `Transport` を再利用（InMemory=CI、`MqttTransport`=実機）。
-- **AMQP 1.0（Hono northbound）**: アドレス `/telemetry/{tenant}`、メッセージ属性 `device_id` /
-  `orig_address`。後続実装（§7, 将来 issue）。
+- **AMQP 1.0（Hono northbound）✅（[[ADR-016]]・#48）**: チャネル `telemetry/{tenant}/{deviceId}` を
+  アドレス `/telemetry/{tenant}` ＋ メッセージ属性 `device_id` / `orig_address` に変換して送信
+  （`southbound/amqp.py` の `AmqpTransport`、`amqp[s]://host:port`）。`python-qpid-proton` は
+  **optional-extra**（`uv sync --extra amqp`）で遅延 import、認証/TLS は環境変数
+  `BOWS_AMQP_USER` / `BOWS_AMQP_PASSWORD` から注入（既定資格情報なし）。proton 呼び出しは
+  thread executor に逃がしイベントループを塞がない（[[ADR-010]]）。実 Hono は integration＋手動。
 
 ## 5. 識別子（Identity）✅
 
