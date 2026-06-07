@@ -35,8 +35,8 @@ def create_app(
     config: SimulatorConfig,
     faults: FaultController | None = None,
     *,
-    status: Any | None = None,   # StatusProvider | None
-    reloader: Any | None = None, # PointListReloader | None
+    status: Any | None = None,  # StatusProvider | None
+    reloader: Any | None = None,  # PointListReloader | None
     ui_enabled: bool = False,
 ) -> FastAPI:
     faults = faults or FaultController()
@@ -70,15 +70,23 @@ def create_app(
 
     @api.get("/devices")
     def devices() -> list[dict[str, Any]]:
-        return [{"device_id": config.bbc.device_id, "bbc_id": config.bbc.bbc_id,
-                 "object_name": config.bbc.object_name}]
+        return [
+            {
+                "device_id": config.bbc.device_id,
+                "bbc_id": config.bbc.bbc_id,
+                "object_name": config.bbc.object_name,
+            }
+        ]
 
     @api.get("/devices/{device_id}")
     def device(device_id: int) -> dict[str, Any]:
         if device_id != config.bbc.device_id:
             raise HTTPException(404, "unknown device")
-        return {"device_id": config.bbc.device_id, "bbc_id": config.bbc.bbc_id,
-                "objects": len(config.objects)}
+        return {
+            "device_id": config.bbc.device_id,
+            "bbc_id": config.bbc.bbc_id,
+            "objects": len(config.objects),
+        }
 
     @api.get("/objects")
     def objects() -> list[dict[str, Any]]:
@@ -175,8 +183,10 @@ def create_app(
         if status is None or status.log_handler is None:
             return []
         entries = status.log_handler.snapshot(level=level, since=since, limit=limit)
-        return [{"ts": e.ts, "level": e.level, "logger": e.logger, "message": e.message}
-                for e in entries]
+        return [
+            {"ts": e.ts, "level": e.level, "logger": e.logger, "message": e.message}
+            for e in entries
+        ]
 
     @api.get("/pointlist")
     def pointlist_info() -> dict[str, Any]:
@@ -208,6 +218,7 @@ def create_app(
         api.include_router(web)
 
         from pathlib import Path as _Path
+
         _static = _Path(__file__).parent.parent / "web" / "static"
         api.mount("/ui/static", StaticFiles(directory=str(_static)), name="ui-static")
 

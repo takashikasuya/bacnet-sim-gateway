@@ -23,8 +23,13 @@ def handler() -> RingBufferLogHandler:
 
 def _emit(h: RingBufferLogHandler, level: str, msg: str, ts: float | None = None) -> None:
     record = logging.LogRecord(
-        name="bbc_sim.test", level=getattr(logging, level),
-        pathname="", lineno=0, msg=msg, args=(), exc_info=None,
+        name="bbc_sim.test",
+        level=getattr(logging, level),
+        pathname="",
+        lineno=0,
+        msg=msg,
+        args=(),
+        exc_info=None,
     )
     if ts is not None:
         record.created = ts
@@ -95,8 +100,11 @@ def _app_with_logs(sample_pointlist, free_port):
     bapp = build_application(cfg, with_network=False)
     handler = RingBufferLogHandler(capacity=100)
     status = StatusProvider(
-        config=cfg, app=bapp, bound=False,
-        get_manager=lambda: None, log_handler=handler,
+        config=cfg,
+        app=bapp,
+        bound=False,
+        get_manager=lambda: None,
+        log_handler=handler,
     )
     client = TestClient(create_app(bapp, cfg, status=status))
     try:

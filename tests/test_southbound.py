@@ -188,7 +188,8 @@ def test_command_scale_zero_raises(sample_pointlist):
     cfg, _ = generate_config(read_point_list(sample_pointlist), bbc_id="b", device_id=1)
     o = next(x for x in cfg.objects if x.point_id == "PT006")  # analogValue
     o.binding = BindingSpec(
-        protocol="mqtt", direction=BindingDirection.command,
+        protocol="mqtt",
+        direction=BindingDirection.command,
         mapping=BindingMapping(scale=0.0),
     )
     with pytest.raises(ValueError):

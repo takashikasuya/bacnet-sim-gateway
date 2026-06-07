@@ -48,8 +48,10 @@ class Counters:
 def compute_writable_oids(config: SimulatorConfig) -> frozenset[tuple[str, int]]:
     """Derive the writable-OID frozenset from config (used by build_application and reload)."""
     return frozenset(
-        (str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
-         spec.object_instance)
+        (
+            str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
+            spec.object_instance,
+        )
         for spec in config.objects
         if spec.writable
     )
@@ -93,9 +95,7 @@ class BBCApplication(Application):
             if obj is not None:
                 await self.on_command(oid, obj.presentValue)
 
-    async def do_WritePropertyMultipleRequest(
-        self, apdu: WritePropertyMultipleRequest
-    ) -> None:
+    async def do_WritePropertyMultipleRequest(self, apdu: WritePropertyMultipleRequest) -> None:
         # Enforce writable on every present-value element before delegating (AC-5).
         # Raise the correct WPM error type server-side. Note: bacpypes3 0.0.106 cannot
         # transport WPM error responses over IP (the client times out) — see
@@ -108,9 +108,7 @@ class BBCApplication(Application):
                     and oid not in self._writable_oids
                 ):
                     raise WritePropertyMultipleError(
-                        errorType=ErrorType(
-                            errorClass="property", errorCode="writeAccessDenied"
-                        ),
+                        errorType=ErrorType(errorClass="property", errorCode="writeAccessDenied"),
                         firstFailedWriteAttempt=ObjectPropertyReference(
                             objectIdentifier=spec.objectIdentifier,
                             propertyIdentifier=prop_value.propertyIdentifier,
@@ -154,8 +152,11 @@ async def run_async(
     from bbc_sim.simulator_runtime.runtime import Runtime
 
     runtime = Runtime(
-        config, transport_uri=transport_uri, rest_port=rest_port,
-        source_path=source_path, ui_enabled=ui_enabled,
+        config,
+        transport_uri=transport_uri,
+        rest_port=rest_port,
+        source_path=source_path,
+        ui_enabled=ui_enabled,
     )
     await runtime.run_forever(stop)
 
@@ -168,10 +169,15 @@ def run(
     ui_enabled: bool = False,
 ) -> None:
     """Blocking entry point for the CLI."""
-    asyncio.run(run_async(
-        config, transport_uri=transport_uri, rest_port=rest_port,
-        source_path=source_path, ui_enabled=ui_enabled,
-    ))
+    asyncio.run(
+        run_async(
+            config,
+            transport_uri=transport_uri,
+            rest_port=rest_port,
+            source_path=source_path,
+            ui_enabled=ui_enabled,
+        )
+    )
 
 
 def run_from_path(
@@ -180,5 +186,4 @@ def run_from_path(
     rest_port: int | None = None,
 ) -> None:
     p = Path(config_path)
-    run(load_config(p), transport_uri=transport_uri, rest_port=rest_port,
-        source_path=p.resolve())
+    run(load_config(p), transport_uri=transport_uri, rest_port=rest_port, source_path=p.resolve())

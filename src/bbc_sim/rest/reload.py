@@ -101,10 +101,7 @@ class PointListReloader:
                 "status": "restart_required",
                 "diff": _diff_dict(diff),
                 "errors": [],
-                "hint": (
-                    f"bbc-sim run -c {self._source} "
-                    f"--mode {self._runtime.config.mode.value}"
-                ),
+                "hint": (f"bbc-sim run -c {self._source} --mode {self._runtime.config.mode.value}"),
             }
 
         _apply_live(self._runtime, new_cfg, diff)

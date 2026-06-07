@@ -14,8 +14,17 @@ def test_generate_yaml_produces_valid_config(sample_pointlist, tmp_path):
     out = tmp_path / "simulator.yaml"
     result = runner.invoke(
         app,
-        ["generate-yaml", "-i", str(sample_pointlist), "-o", str(out),
-         "--bbc-id", "bbc-local-001", "--bacnet-device-id", "1001"],
+        [
+            "generate-yaml",
+            "-i",
+            str(sample_pointlist),
+            "-o",
+            str(out),
+            "--bbc-id",
+            "bbc-local-001",
+            "--bacnet-device-id",
+            "1001",
+        ],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -55,8 +64,10 @@ def test_generate_yaml_fails_on_invalid_config(tmp_path):
         "tags,supplier,owner,description,local_id,device_id_bacnet,instance_no_bacnet,"
         "object_type_bacnet"
     )
-    row = ("GW1,D1,d,t,s,b,1F,a,a,,HVAC Control,Command,PT1,Mode,true,0,,,,,1.0,,,,,"
-           "L1,BAC1,1,Multi-state-Value")
+    row = (
+        "GW1,D1,d,t,s,b,1F,a,a,,HVAC Control,Command,PT1,Mode,true,0,,,,,1.0,,,,,"
+        "L1,BAC1,1,Multi-state-Value"
+    )
     csv = tmp_path / "bad.csv"
     csv.write_text(header + "\n" + row + "\n", encoding="utf-8")
     out = tmp_path / "sim.yaml"
@@ -77,8 +88,6 @@ def test_generate_yaml_output_is_self_validated(sample_pointlist, tmp_path):
 def test_inference_emits_warning(sample_pointlist, tmp_path):
     # PT002/PT003/PT005 lack object_type_bacnet -> inference warnings on stderr.
     out = tmp_path / "simulator.yaml"
-    result = runner.invoke(
-        app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(out)]
-    )
+    result = runner.invoke(app, ["generate-yaml", "-i", str(sample_pointlist), "-o", str(out)])
     assert result.exit_code == 0
     assert "warning" in result.output.lower()

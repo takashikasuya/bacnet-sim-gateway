@@ -23,8 +23,11 @@ def ui_client(sample_pointlist, free_port):
     bapp = build_application(cfg, with_network=False)
     handler = RingBufferLogHandler()
     status = StatusProvider(
-        config=cfg, app=bapp, bound=True,
-        get_manager=lambda: None, log_handler=handler,
+        config=cfg,
+        app=bapp,
+        bound=True,
+        get_manager=lambda: None,
+        log_handler=handler,
     )
     # minimal runtime stub for reloader
     runtime = Runtime.__new__(Runtime)
@@ -51,15 +54,18 @@ def _assert_html(resp, keyword: str | None = None) -> None:
         assert keyword in resp.text
 
 
-@pytest.mark.parametrize("path,keyword", [
-    ("/ui/", "Dashboard"),
-    ("/ui/devices", "デバイス"),
-    ("/ui/bindings", "バインディング"),
-    ("/ui/status", "northbound"),
-    ("/ui/logs", "ログ"),
-    ("/ui/pointlist", "点リスト"),
-    ("/ui/help", "ヘルプ"),
-])
+@pytest.mark.parametrize(
+    "path,keyword",
+    [
+        ("/ui/", "Dashboard"),
+        ("/ui/devices", "デバイス"),
+        ("/ui/bindings", "バインディング"),
+        ("/ui/status", "northbound"),
+        ("/ui/logs", "ログ"),
+        ("/ui/pointlist", "点リスト"),
+        ("/ui/help", "ヘルプ"),
+    ],
+)
 def test_page_returns_html(ui_client, path, keyword):
     client, _ = ui_client
     resp = client.get(path)
@@ -81,13 +87,16 @@ def test_object_detail_not_found(ui_client):
     assert resp.status_code == 404
 
 
-@pytest.mark.parametrize("partial,keyword", [
-    ("/ui/partials/tiles", ""),
-    ("/ui/partials/objects_table", "point_id"),
-    ("/ui/partials/bindings_table", ""),
-    ("/ui/partials/counters", ""),
-    ("/ui/partials/logtail", ""),
-])
+@pytest.mark.parametrize(
+    "partial,keyword",
+    [
+        ("/ui/partials/tiles", ""),
+        ("/ui/partials/objects_table", "point_id"),
+        ("/ui/partials/bindings_table", ""),
+        ("/ui/partials/counters", ""),
+        ("/ui/partials/logtail", ""),
+    ],
+)
 def test_partials_return_html(ui_client, partial, keyword):
     client, _ = ui_client
     resp = client.get(partial)
@@ -100,7 +109,7 @@ def test_dashboard_shows_bbc_and_device_id(ui_client):
     client, cfg = ui_client
     resp = client.get("/ui/")
     assert "bbc-ui" in resp.text  # bbc_id
-    assert "8001" in resp.text    # device_id
+    assert "8001" in resp.text  # device_id
 
 
 def test_pointlist_reload_post_returns_html(ui_client):

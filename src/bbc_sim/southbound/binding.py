@@ -32,8 +32,10 @@ class TelemetryRecord:
 
 def _oid_key(spec: BacnetObjectSpec) -> tuple[str, int]:
     """Match the (dash-type, instance) key used by BBCApplication."""
-    return (str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
-            spec.object_instance)
+    return (
+        str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
+        spec.object_instance,
+    )
 
 
 def channels(spec: BacnetObjectSpec) -> tuple[str, str]:
@@ -90,14 +92,16 @@ class SouthboundManager:
                 continue
             tele, cmd = channels(spec)
             rec = self._last_telemetry.get(spec.point_id)
-            points.append({
-                "point_id": spec.point_id,
-                "protocol": spec.binding.protocol,
-                "direction": spec.binding.direction.value,
-                "address": spec.binding.address or tele,
-                "last_update_ts": rec.ts if rec else None,
-                "quality": rec.quality if rec else "unknown",
-            })
+            points.append(
+                {
+                    "point_id": spec.point_id,
+                    "protocol": spec.binding.protocol,
+                    "direction": spec.binding.direction.value,
+                    "address": spec.binding.address or tele,
+                    "last_update_ts": rec.ts if rec else None,
+                    "quality": rec.quality if rec else "unknown",
+                }
+            )
         return {"active": True, "protocols": protocols, "points": points}
 
     def _telemetry_handler(self, spec: BacnetObjectSpec):

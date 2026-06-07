@@ -10,8 +10,13 @@ from bbc_sim.simulation.generators import make_generator
 
 def _analog(**update) -> BacnetObjectSpec:
     return BacnetObjectSpec(
-        point_id="P1", object_type=BacnetObjectType.analogInput, object_instance=1,
-        object_name="n", present_value=20.0, min_pres_value=0.0, max_pres_value=40.0,
+        point_id="P1",
+        object_type=BacnetObjectType.analogInput,
+        object_instance=1,
+        object_name="n",
+        present_value=20.0,
+        min_pres_value=0.0,
+        max_pres_value=40.0,
         update=UpdateConfig(**update),
     )
 
@@ -43,9 +48,9 @@ def test_replay_cycles_sequence():
 
 def test_scenario_holds_then_steps():
     # scenario: list of (t, value) setpoints; value holds until next setpoint time.
-    g = make_generator(_analog(
-        mode="scenario", params={"setpoints": [[0, 10.0], [3, 25.0], [6, 5.0]]}
-    ))
+    g = make_generator(
+        _analog(mode="scenario", params={"setpoints": [[0, 10.0], [3, 25.0], [6, 5.0]]})
+    )
     assert g.next(0) == 10.0
     assert g.next(2) == 10.0
     assert g.next(3) == 25.0

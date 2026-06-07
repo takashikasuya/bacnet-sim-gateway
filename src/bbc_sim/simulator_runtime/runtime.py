@@ -56,6 +56,7 @@ class Runtime:
 
         # Observability: ring-buffer log handler (EP-007.1)
         from bbc_sim.observability.log_buffer import RingBufferLogHandler
+
         self._log_handler = RingBufferLogHandler(capacity=1000)
         logging.getLogger("bbc_sim").addHandler(self._log_handler)
 
@@ -97,11 +98,16 @@ class Runtime:
             )
             reloader = PointListReloader(source_path=self.source_path, runtime=self)
             api = create_app(
-                self.app, self.config, self.faults,
-                status=status, reloader=reloader, ui_enabled=self.ui_enabled,
+                self.app,
+                self.config,
+                self.faults,
+                status=status,
+                reloader=reloader,
+                ui_enabled=self.ui_enabled,
             )
-            uv_config = uvicorn.Config(api, host="127.0.0.1", port=self.rest_port,
-                                       log_level="warning")
+            uv_config = uvicorn.Config(
+                api, host="127.0.0.1", port=self.rest_port, log_level="warning"
+            )
             self._rest_server = uvicorn.Server(uv_config)
             self._rest_task = asyncio.create_task(self._rest_server.serve())
 

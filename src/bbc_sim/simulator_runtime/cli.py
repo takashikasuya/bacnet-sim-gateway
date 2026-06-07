@@ -25,8 +25,7 @@ def register(app: typer.Typer) -> None:
             None, "--rest-port", help="serve the REST control plane on this port"
         ),
         ui: bool = typer.Option(
-            False, "--ui/--no-ui",
-            help="serve the admin Web UI at /ui (requires --rest-port)"
+            False, "--ui/--no-ui", help="serve the admin Web UI at /ui (requires --rest-port)"
         ),
     ) -> None:
         """Start the virtual B-BC and serve it on BACnet/IP (northbound)."""
@@ -45,7 +44,12 @@ def register(app: typer.Typer) -> None:
         if ui and rest_port is not None:
             typer.secho(f"admin UI: http://127.0.0.1:{rest_port}/ui/", fg=typer.colors.CYAN)
         try:
-            run(cfg, transport_uri=transport, rest_port=rest_port,
-                source_path=config.resolve(), ui_enabled=ui)
+            run(
+                cfg,
+                transport_uri=transport,
+                rest_port=rest_port,
+                source_path=config.resolve(),
+                ui_enabled=ui,
+            )
         except KeyboardInterrupt:  # pragma: no cover - interactive
             typer.echo("stopped")

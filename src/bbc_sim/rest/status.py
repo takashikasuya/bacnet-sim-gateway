@@ -81,10 +81,18 @@ class StatusProvider:
 
 def _counters_dict(counters: Any) -> dict[str, int]:
     if counters is None:
-        return {k: 0 for k in (
-            "who_is", "i_am_sent", "read_property", "read_property_multiple",
-            "write_property", "write_property_multiple", "write_access_denied",
-        )}
+        return {
+            k: 0
+            for k in (
+                "who_is",
+                "i_am_sent",
+                "read_property",
+                "read_property_multiple",
+                "write_property",
+                "write_property_multiple",
+                "write_access_denied",
+            )
+        }
     return {
         "who_is": counters.who_is,
         "i_am_sent": counters.i_am_sent,

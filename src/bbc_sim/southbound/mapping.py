@@ -60,8 +60,6 @@ def present_value_to_command(spec: BacnetObjectSpec, present_value: Any) -> byte
         value = int(present_value)
     else:
         if not m.scale:
-            raise ValueError(
-                f"{spec.point_id}: command mapping scale must be non-zero"
-            )
+            raise ValueError(f"{spec.point_id}: command mapping scale must be non-zero")
         value = (float(present_value) - m.offset) / m.scale
     return json.dumps({"value": value}).encode("utf-8")

@@ -215,9 +215,7 @@ def validate_config(config: SimulatorConfig) -> list[str]:
         seen_points.add(o.point_id)
         s = seen_instances[o.object_type]
         if o.object_instance in s:
-            errors.append(
-                f"duplicate object instance {o.object_type.value}:{o.object_instance}"
-            )
+            errors.append(f"duplicate object instance {o.object_type.value}:{o.object_instance}")
         s.add(o.object_instance)
         if o.object_type.is_multistate and not o.state_text:
             errors.append(f"{o.point_id}: multi-state object missing state_text")

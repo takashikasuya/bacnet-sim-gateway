@@ -31,8 +31,9 @@ def test_foreign_device_network_port():
 
 
 def test_bbmd_network_port_with_bdt():
-    net = NetworkConfig(bind_address="127.0.0.1", port=0,
-                        bbmd_bdt=["192.168.1.20:47808", "192.168.1.21:47808"])
+    net = NetworkConfig(
+        bind_address="127.0.0.1", port=0, bbmd_bdt=["192.168.1.20:47808", "192.168.1.21:47808"]
+    )
     np = build_network_port(net)
     assert str(np.bacnetIPMode) == "bbmd"
     assert len(np.bbmdBroadcastDistributionTable) == 2

@@ -72,9 +72,7 @@ def resolve_object_type(point: SbcoPoint) -> tuple[BacnetObjectType, list[str]]:
     if explicit:
         ot = normalize_object_type(explicit)
         if ot is None:
-            warnings.append(
-                f"{point.point_id}: unknown object_type_bacnet {explicit!r}; inferring"
-            )
+            warnings.append(f"{point.point_id}: unknown object_type_bacnet {explicit!r}; inferring")
         else:
             warnings += _consistency_warnings(point, ot)
             return ot, warnings

@@ -39,7 +39,9 @@ def with_manager(bound_config):
     transport = InMemoryTransport()
     manager = SouthboundManager(bapp, bound_config, transport)
     status = StatusProvider(
-        config=bound_config, app=bapp, bound=False,
+        config=bound_config,
+        app=bapp,
+        bound=False,
         get_manager=lambda: manager,
     )
     client = TestClient(create_app(bapp, bound_config, status=status))

@@ -9,9 +9,14 @@ from bbc_sim.simulation.fault import FaultController, FaultType
 
 def _ai() -> object:
     spec = BacnetObjectSpec(
-        point_id="P1", object_type=BacnetObjectType.analogInput, object_instance=1,
-        object_name="t", present_value=20.0, units="degreesCelsius",
-        min_pres_value=0.0, max_pres_value=40.0,
+        point_id="P1",
+        object_type=BacnetObjectType.analogInput,
+        object_instance=1,
+        object_name="t",
+        present_value=20.0,
+        units="degreesCelsius",
+        min_pres_value=0.0,
+        max_pres_value=40.0,
     )
     return build_object(spec)
 
