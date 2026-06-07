@@ -14,6 +14,7 @@
 | [EP-006](epic/EP-006-standards-artifacts-sc.md) | BACnet/SC・PICS/EDE・意味モデル・WoT | 3 |
 | [EP-007](epic/EP-007-gateway-admin-ui.md) | 管理者向け Web UI（状態確認・値/状態変更・点リスト再読込・ログ・バインディング・北向き稼働状態・オンボーディング） | 2 |
 | [EP-008](epic/EP-008-northbound-bows-connector.md) | BOWS コネクタ（BACnet→MQTT/AMQP→Building OS テレメトリ） | 2 |
+| [EP-009](epic/EP-009-architecture-quality.md) | アーキテクチャ＆品質改善（カプセル化・重複排除・型安全・例外処理・テスト/CI 強化） | 2 |
 
 > **device-mapping mode（[[ADR-011]] / `../specs/device-mapping.md`）** は runtime mode と直交する横断機能: `aggregated`=MVP-1（EP-001）、`multi-device`=MVP-2（多 Device 公開は BBMD と同マイルストーン＝EP-004）、`auto-partition`=MVP-3（EP-006）。
 

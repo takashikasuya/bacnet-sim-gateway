@@ -57,8 +57,9 @@ def test_instances_unique_within_type(config):
 def test_auto_assigned_instances_avoid_explicit(config):
     # PT002 is analogInput with no explicit instance; must not collide with PT001/PT008.
     by_id = {o.point_id: o for o in config.objects}
-    ai_instances = {o.object_instance for o in config.objects
-                    if o.object_type is BacnetObjectType.analogInput}
+    ai_instances = {
+        o.object_instance for o in config.objects if o.object_type is BacnetObjectType.analogInput
+    }
     assert by_id["PT002"].object_instance in ai_instances
     assert by_id["PT002"].object_instance not in (1001, 1003)
 
@@ -156,7 +157,7 @@ def test_duplicate_explicit_instance_is_resolved_and_warned(tmp_path, sample_poi
     header, pt001 = lines[0], lines[1].split(",")
     clash = pt001.copy()
     clash[12] = "PT099"  # point_id
-    clash[27] = "1001"   # instance_no_bacnet collides with PT001
+    clash[27] = "1001"  # instance_no_bacnet collides with PT001
     out = tmp_path / "clash.csv"
     out.write_text("\n".join([header, lines[1], ",".join(clash)]) + "\n", encoding="utf-8")
 
@@ -170,12 +171,34 @@ def test_multistate_without_labels_is_flagged():
     from bbc_sim.models import SbcoPoint
 
     p = SbcoPoint(
-        gateway_id="GW", device_id="D", device_name="d", device_type="t", site="",
-        building="", floor="", installation_area="", target_area="", panel="",
-        point_type="", point_specification="", point_id="P1", point_name="n",
-        writable=True, interval=None, unit="", max_pres_value=None, min_pres_value=None,
-        labels=[], scale=1.0, tags=[], supplier="", owner="", description="",
-        local_id="", device_id_bacnet="", instance_no_bacnet=None,
+        gateway_id="GW",
+        device_id="D",
+        device_name="d",
+        device_type="t",
+        site="",
+        building="",
+        floor="",
+        installation_area="",
+        target_area="",
+        panel="",
+        point_type="",
+        point_specification="",
+        point_id="P1",
+        point_name="n",
+        writable=True,
+        interval=None,
+        unit="",
+        max_pres_value=None,
+        min_pres_value=None,
+        labels=[],
+        scale=1.0,
+        tags=[],
+        supplier="",
+        owner="",
+        description="",
+        local_id="",
+        device_id_bacnet="",
+        instance_no_bacnet=None,
         object_type_bacnet="Multi-state-Value",
     )
     cfg, _ = generate_config([p], bbc_id="bbc-local-001", device_id=1001)

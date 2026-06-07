@@ -11,12 +11,19 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
+
+from bbc_sim.models import SimulatorConfig
+from bbc_sim.simulator_runtime.app import BBCApplication
+
+if TYPE_CHECKING:
+    from bbc_sim.rest.reload import PointListReloader
+    from bbc_sim.rest.status import StatusProvider
 
 _HERE = Path(__file__).parent
 _templates = Jinja2Templates(directory=str(_HERE / "templates"))
@@ -24,38 +31,37 @@ _templates = Jinja2Templates(directory=str(_HERE / "templates"))
 # context helpers consumed by both full pages and partials
 
 
-def _obj_list(config: Any, app: Any) -> list[dict[str, Any]]:
-    from bacpypes3.primitivedata import ObjectIdentifier
-
-    from bbc_sim.bacnet_objects.builder import _OID_TYPE
+def _obj_list(config: SimulatorConfig, app: BBCApplication) -> list[dict[str, Any]]:
+    from bbc_sim.bacnet_objects.builder import spec_to_oid
 
     result = []
     for spec in config.objects:
-        oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
-        obj = app.get_object_id(oid)
+        obj = app.get_object_id(spec_to_oid(spec))
         pv = getattr(obj, "presentValue", None)
         oos = bool(getattr(obj, "outOfService", False))
         flags = list(getattr(obj, "statusFlags", []) or [])
-        result.append({
-            "point_id": spec.point_id,
-            "object_type": spec.object_type.value,
-            "object_instance": spec.object_instance,
-            "object_name": spec.object_name,
-            "present_value": str(pv) if pv is not None else "—",
-            "units": spec.units or "",
-            "writable": spec.writable,
-            "out_of_service": oos,
-            "status_flags": flags,
-            "has_binding": spec.binding is not None,
-        })
+        result.append(
+            {
+                "point_id": spec.point_id,
+                "object_type": spec.object_type.value,
+                "object_instance": spec.object_instance,
+                "object_name": spec.object_name,
+                "present_value": str(pv) if pv is not None else "—",
+                "units": spec.units or "",
+                "writable": spec.writable,
+                "out_of_service": oos,
+                "status_flags": flags,
+                "has_binding": spec.binding is not None,
+            }
+        )
     return result
 
 
 def create_web_router(
-    config: Any,
-    app: Any,
-    status: Any | None,
-    reloader: Any | None,
+    config: SimulatorConfig,
+    app: BBCApplication,
+    status: StatusProvider | None,
+    reloader: PointListReloader | None,
 ) -> APIRouter:
     router = APIRouter(prefix="/ui")
 
@@ -115,12 +121,21 @@ def create_web_router(
         obj_data = next((r for r in rows if r["point_id"] == point_id), None)
         spec = specs[point_id]
         ctx = _base_ctx(request)
-        ctx.update({
-            "page": "devices",
-            "obj": obj_data,
-            "spec": spec,
-            "fault_types": ["comm_loss", "freeze", "abnormal", "out_of_service", "fault", "clear"],
-        })
+        ctx.update(
+            {
+                "page": "devices",
+                "obj": obj_data,
+                "spec": spec,
+                "fault_types": [
+                    "comm_loss",
+                    "freeze",
+                    "abnormal",
+                    "out_of_service",
+                    "fault",
+                    "clear",
+                ],
+            }
+        )
         return _templates.TemplateResponse(request, "object_detail.html", context=ctx)
 
     # ---- Bindings ----
@@ -169,8 +184,10 @@ def create_web_router(
         if status and status.log_handler:
             lv = level.upper() if level else None
             raw = status.log_handler.snapshot(level=lv, limit=limit)
-            entries = [{"ts": e.ts, "level": e.level, "logger": e.logger,
-                        "message": e.message} for e in reversed(raw)]
+            entries = [
+                {"ts": e.ts, "level": e.level, "logger": e.logger, "message": e.message}
+                for e in reversed(raw)
+            ]
         ctx["entries"] = entries
         ctx["selected_level"] = level
         return _templates.TemplateResponse(request, "logs.html", context=ctx)
@@ -182,8 +199,10 @@ def create_web_router(
         if status and status.log_handler:
             lv = level.upper() if level else None
             raw = status.log_handler.snapshot(level=lv, limit=limit)
-            entries = [{"ts": e.ts, "level": e.level, "logger": e.logger,
-                        "message": e.message} for e in reversed(raw)]
+            entries = [
+                {"ts": e.ts, "level": e.level, "logger": e.logger, "message": e.message}
+                for e in reversed(raw)
+            ]
         ctx["entries"] = entries
         return _templates.TemplateResponse(request, "partials/_logtail.html", context=ctx)
 

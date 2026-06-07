@@ -10,12 +10,34 @@ from bbc_sim.yaml_generator.units import to_bacnet_units
 
 def _point(**kw) -> SbcoPoint:
     base = dict(
-        gateway_id="GW", device_id="D", device_name="d", device_type="t",
-        site="", building="", floor="", installation_area="", target_area="",
-        panel="", point_type="", point_specification="", point_id="P",
-        point_name="n", writable=False, interval=None, unit="", max_pres_value=None,
-        min_pres_value=None, labels=[], scale=1.0, tags=[], supplier="", owner="",
-        description="", local_id="", device_id_bacnet="", instance_no_bacnet=None,
+        gateway_id="GW",
+        device_id="D",
+        device_name="d",
+        device_type="t",
+        site="",
+        building="",
+        floor="",
+        installation_area="",
+        target_area="",
+        panel="",
+        point_type="",
+        point_specification="",
+        point_id="P",
+        point_name="n",
+        writable=False,
+        interval=None,
+        unit="",
+        max_pres_value=None,
+        min_pres_value=None,
+        labels=[],
+        scale=1.0,
+        tags=[],
+        supplier="",
+        owner="",
+        description="",
+        local_id="",
+        device_id_bacnet="",
+        instance_no_bacnet=None,
         object_type_bacnet="",
     )
     base.update(kw)
@@ -57,9 +79,7 @@ def test_infer_analog_from_numeric_unit():
 
 
 def test_writable_makes_value_not_input():
-    ot, _ = resolve_object_type(
-        _point(unit="℃", point_specification="Setpoint", writable=True)
-    )
+    ot, _ = resolve_object_type(_point(unit="℃", point_specification="Setpoint", writable=True))
     assert ot is BacnetObjectType.analogValue
 
 
@@ -75,8 +95,7 @@ def test_status_without_unit_infers_binary():
 
 def test_inconsistency_command_but_not_writable_warns():
     _, warnings = resolve_object_type(
-        _point(object_type_bacnet="Binary-Output", point_specification="Command",
-               writable=False)
+        _point(object_type_bacnet="Binary-Output", point_specification="Command", writable=False)
     )
     assert any("writable" in w.lower() for w in warnings)
 
@@ -97,10 +116,10 @@ def test_resolves_every_fixture_row(sample_pointlist):
     points = read_point_list(sample_pointlist)
     resolved = {p.point_id: resolve_object_type(p)[0] for p in points}
     assert resolved["PT001"] is BacnetObjectType.analogInput
-    assert resolved["PT002"] is BacnetObjectType.analogInput   # inferred from %RH
-    assert resolved["PT003"] is BacnetObjectType.binaryInput   # 2 labels
+    assert resolved["PT002"] is BacnetObjectType.analogInput  # inferred from %RH
+    assert resolved["PT003"] is BacnetObjectType.binaryInput  # 2 labels
     assert resolved["PT004"] is BacnetObjectType.binaryOutput  # explicit
     assert resolved["PT005"] is BacnetObjectType.multiStateInput  # 3 labels
-    assert resolved["PT006"] is BacnetObjectType.analogValue   # explicit
+    assert resolved["PT006"] is BacnetObjectType.analogValue  # explicit
     assert resolved["PT007"] is BacnetObjectType.multiStateValue  # explicit
     assert resolved["PT008"] is BacnetObjectType.analogInput

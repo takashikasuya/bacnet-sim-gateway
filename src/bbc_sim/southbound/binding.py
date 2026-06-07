@@ -9,16 +9,16 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from bacpypes3.app import Application
-from bacpypes3.primitivedata import ObjectIdentifier
-
-from bbc_sim.bacnet_objects.builder import _OID_TYPE
+from bbc_sim.bacnet_objects.builder import oid_key, spec_to_oid
 from bbc_sim.models import BacnetObjectSpec, BindingDirection, SimulatorConfig
 from bbc_sim.southbound.address import derive_address, mqtt_topics
 from bbc_sim.southbound.mapping import present_value_to_command, telemetry_to_present_value
 from bbc_sim.southbound.transport import Transport
+
+if TYPE_CHECKING:
+    from bbc_sim.simulator_runtime.app import BBCApplication
 
 _log = logging.getLogger(__name__)
 
@@ -28,12 +28,6 @@ class TelemetryRecord:
     ts: float
     value: Any
     quality: str  # "good" | "bad"
-
-
-def _oid_key(spec: BacnetObjectSpec) -> tuple[str, int]:
-    """Match the (dash-type, instance) key used by BBCApplication."""
-    return (str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
-            spec.object_instance)
 
 
 def channels(spec: BacnetObjectSpec) -> tuple[str, str]:
@@ -47,7 +41,7 @@ def channels(spec: BacnetObjectSpec) -> tuple[str, str]:
 class SouthboundManager:
     """Manage southbound bindings for a running B-BC."""
 
-    def __init__(self, app: Application, config: SimulatorConfig, transport: Transport):
+    def __init__(self, app: BBCApplication, config: SimulatorConfig, transport: Transport):
         self.app = app
         self.config = config
         self.transport = transport
@@ -64,11 +58,11 @@ class SouthboundManager:
             if direction in (BindingDirection.telemetry, BindingDirection.both):
                 self.transport.subscribe(tele, self._telemetry_handler(spec))
             if direction in (BindingDirection.command, BindingDirection.both):
-                self._command_channel[_oid_key(spec)] = (spec, cmd)
+                self._command_channel[oid_key(spec)] = (spec, cmd)
 
         # Register the command hook + command-bound set on the application.
-        self.app.on_command = self._on_command  # type: ignore[attr-defined]
-        self.app._command_oids = frozenset(self._command_channel)  # type: ignore[attr-defined]
+        self.app.set_command_hook(self._on_command)
+        self.app.set_command_oids(frozenset(self._command_channel))
 
     async def stop(self) -> None:
         await self.transport.stop()
@@ -90,18 +84,25 @@ class SouthboundManager:
                 continue
             tele, cmd = channels(spec)
             rec = self._last_telemetry.get(spec.point_id)
-            points.append({
-                "point_id": spec.point_id,
-                "protocol": spec.binding.protocol,
-                "direction": spec.binding.direction.value,
-                "address": spec.binding.address or tele,
-                "last_update_ts": rec.ts if rec else None,
-                "quality": rec.quality if rec else "unknown",
-            })
+            points.append(
+                {
+                    "point_id": spec.point_id,
+                    "protocol": spec.binding.protocol,
+                    "direction": spec.binding.direction.value,
+                    "address": spec.binding.address or tele,
+                    "last_update_ts": rec.ts if rec else None,
+                    "quality": rec.quality if rec else "unknown",
+                }
+            )
         return {"active": True, "protocols": protocols, "points": points}
 
     def _telemetry_handler(self, spec: BacnetObjectSpec):
-        oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+        oid = spec_to_oid(spec)
+
+        def _mark_bad() -> None:
+            self._last_telemetry[spec.point_id] = TelemetryRecord(
+                ts=time.time(), value=None, quality="bad"
+            )
 
         async def handler(_channel: str, payload: bytes) -> None:
             try:
@@ -112,16 +113,19 @@ class SouthboundManager:
                 self._last_telemetry[spec.point_id] = TelemetryRecord(
                     ts=time.time(), value=value, quality="good"
                 )
-            except Exception:  # noqa: BLE001 - never let a bad payload kill the loop
-                _log.exception("telemetry handling failed for %s", spec.point_id)
-                self._last_telemetry[spec.point_id] = TelemetryRecord(
-                    ts=time.time(), value=None, quality="bad"
-                )
+            except (ValueError, TypeError, KeyError) as exc:
+                # Expected "bad payload": decode / value-conversion failures
+                # (json.JSONDecodeError is a ValueError subclass) — EP-009.4.
+                _log.warning("bad telemetry payload for %s: %s", spec.point_id, exc)
+                _mark_bad()
+            except Exception:  # noqa: BLE001 - unexpected; never kill the loop (ADR-010)
+                _log.exception("unexpected telemetry handler error for %s", spec.point_id)
+                _mark_bad()
 
         return handler
 
-    async def _on_command(self, oid_key: tuple[str, int], present_value: Any) -> None:
-        entry = self._command_channel.get(oid_key)
+    async def _on_command(self, key: tuple[str, int], present_value: Any) -> None:
+        entry = self._command_channel.get(key)
         if not entry:
             return
         spec, channel = entry

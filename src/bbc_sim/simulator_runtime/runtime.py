@@ -10,12 +10,17 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 from bbc_sim.models import RuntimeMode, SimulatorConfig
 from bbc_sim.simulation.engine import SimulationEngine
 from bbc_sim.simulation.fault import FaultController
 from bbc_sim.simulator_runtime.app import BBCApplication, build_application
+
+if TYPE_CHECKING:
+    import uvicorn
+
+    from bbc_sim.southbound.binding import SouthboundManager
 
 _log = logging.getLogger(__name__)
 
@@ -50,12 +55,13 @@ class Runtime:
             if engine.has_generators():  # only run if something is actually generated
                 self.engine = engine
 
-        self.manager: Any = None  # SouthboundManager (gateway/combined)
-        self._rest_server: Any = None  # uvicorn.Server
+        self.manager: SouthboundManager | None = None  # gateway/combined only
+        self._rest_server: uvicorn.Server | None = None
         self._rest_task: asyncio.Task[None] | None = None
 
         # Observability: ring-buffer log handler (EP-007.1)
         from bbc_sim.observability.log_buffer import RingBufferLogHandler
+
         self._log_handler = RingBufferLogHandler(capacity=1000)
         logging.getLogger("bbc_sim").addHandler(self._log_handler)
 
@@ -97,11 +103,16 @@ class Runtime:
             )
             reloader = PointListReloader(source_path=self.source_path, runtime=self)
             api = create_app(
-                self.app, self.config, self.faults,
-                status=status, reloader=reloader, ui_enabled=self.ui_enabled,
+                self.app,
+                self.config,
+                self.faults,
+                status=status,
+                reloader=reloader,
+                ui_enabled=self.ui_enabled,
             )
-            uv_config = uvicorn.Config(api, host="127.0.0.1", port=self.rest_port,
-                                       log_level="warning")
+            uv_config = uvicorn.Config(
+                api, host="127.0.0.1", port=self.rest_port, log_level="warning"
+            )
             self._rest_server = uvicorn.Server(uv_config)
             self._rest_task = asyncio.create_task(self._rest_server.serve())
 

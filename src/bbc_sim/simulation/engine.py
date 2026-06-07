@@ -12,7 +12,7 @@ from typing import Any
 from bacpypes3.app import Application
 from bacpypes3.primitivedata import ObjectIdentifier
 
-from bbc_sim.bacnet_objects.builder import _OID_TYPE
+from bbc_sim.bacnet_objects.builder import spec_to_oid
 from bbc_sim.models import BacnetObjectSpec, SimulatorConfig
 from bbc_sim.simulation.fault import FaultController
 from bbc_sim.simulation.generators import ValueGenerator, make_generator
@@ -45,7 +45,7 @@ class SimulationEngine:
         for spec in config.objects:
             gen = make_generator(spec)
             if gen is not None:
-                oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+                oid = spec_to_oid(spec)
                 self._generators.append((spec, oid, gen))
         self._task: asyncio.Task[None] | None = None
 
@@ -54,13 +54,18 @@ class SimulationEngine:
         return bool(self._generators)
 
     def rebuild(self, config: SimulatorConfig) -> None:
-        """Rebuild generators from a new config after a live point-list reload."""
+        """Rebuild generators from a new config after a live point-list reload.
+
+        Each generator is constructed fresh via ``make_generator``, so internal
+        state (RNG seed, replay/scenario cursor) is reset deterministically rather
+        than carried over from the previous config (EP-009.11).
+        """
         self.config = config
         self._generators = []
         for spec in config.objects:
             gen = make_generator(spec)
             if gen is not None:
-                oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+                oid = spec_to_oid(spec)
                 self._generators.append((spec, oid, gen))
 
     def tick(self, t: float) -> None:

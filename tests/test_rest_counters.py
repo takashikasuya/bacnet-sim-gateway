@@ -66,6 +66,7 @@ def test_write_access_denied_increments_counter_via_rest(app_with_config):
     from bacpypes3.primitivedata import ObjectIdentifier
 
     from bbc_sim.bacnet_objects.builder import _OID_TYPE
+
     oid = ObjectIdentifier((_OID_TYPE[non_writable.object_type], non_writable.object_instance))
 
     apdu = MagicMock(spec=WritePropertyRequest)

@@ -8,16 +8,20 @@ endpoints and mounts the server-rendered Web UI under /ui.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from bacpypes3.primitivedata import ObjectIdentifier
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from bbc_sim.bacnet_objects.builder import _OID_TYPE
+from bbc_sim.bacnet_objects.builder import spec_to_oid
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.simulation.fault import FaultController, FaultType
 from bbc_sim.simulator_runtime.app import BBCApplication
+
+if TYPE_CHECKING:
+    from bbc_sim.rest.reload import PointListReloader
+    from bbc_sim.rest.status import StatusProvider
 
 
 class WriteRequest(BaseModel):
@@ -35,8 +39,8 @@ def create_app(
     config: SimulatorConfig,
     faults: FaultController | None = None,
     *,
-    status: Any | None = None,   # StatusProvider | None
-    reloader: Any | None = None, # PointListReloader | None
+    status: StatusProvider | None = None,
+    reloader: PointListReloader | None = None,
     ui_enabled: bool = False,
 ) -> FastAPI:
     faults = faults or FaultController()
@@ -47,8 +51,7 @@ def create_app(
         return {s.point_id: s for s in config.objects}
 
     def _oid(point_id: str, specs: dict[str, Any]) -> ObjectIdentifier:
-        spec = specs[point_id]
-        return ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+        return spec_to_oid(specs[point_id])
 
     def _object_view(point_id: str, specs: dict[str, Any] | None = None) -> dict[str, Any]:
         if specs is None:
@@ -70,15 +73,23 @@ def create_app(
 
     @api.get("/devices")
     def devices() -> list[dict[str, Any]]:
-        return [{"device_id": config.bbc.device_id, "bbc_id": config.bbc.bbc_id,
-                 "object_name": config.bbc.object_name}]
+        return [
+            {
+                "device_id": config.bbc.device_id,
+                "bbc_id": config.bbc.bbc_id,
+                "object_name": config.bbc.object_name,
+            }
+        ]
 
     @api.get("/devices/{device_id}")
     def device(device_id: int) -> dict[str, Any]:
         if device_id != config.bbc.device_id:
             raise HTTPException(404, "unknown device")
-        return {"device_id": config.bbc.device_id, "bbc_id": config.bbc.bbc_id,
-                "objects": len(config.objects)}
+        return {
+            "device_id": config.bbc.device_id,
+            "bbc_id": config.bbc.bbc_id,
+            "objects": len(config.objects),
+        }
 
     @api.get("/objects")
     def objects() -> list[dict[str, Any]]:
@@ -175,8 +186,10 @@ def create_app(
         if status is None or status.log_handler is None:
             return []
         entries = status.log_handler.snapshot(level=level, since=since, limit=limit)
-        return [{"ts": e.ts, "level": e.level, "logger": e.logger, "message": e.message}
-                for e in entries]
+        return [
+            {"ts": e.ts, "level": e.level, "logger": e.logger, "message": e.message}
+            for e in entries
+        ]
 
     @api.get("/pointlist")
     def pointlist_info() -> dict[str, Any]:
@@ -208,6 +221,7 @@ def create_app(
         api.include_router(web)
 
         from pathlib import Path as _Path
+
         _static = _Path(__file__).parent.parent / "web" / "static"
         api.mount("/ui/static", StaticFiles(directory=str(_static)), name="ui-static")
 

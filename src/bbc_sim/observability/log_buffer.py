@@ -16,10 +16,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class LogEntry:
-    ts: float    # time.time() at record creation
-    level: str   # LEVELNAME string
+    ts: float  # time.time() at record creation
+    level: str  # LEVELNAME string
     logger: str  # record.name
-    message: str # plain message (no formatter, no exc_info)
+    message: str  # plain message (no formatter, no exc_info)
 
 
 class RingBufferLogHandler(logging.Handler):
@@ -33,8 +33,7 @@ class RingBufferLogHandler(logging.Handler):
         except Exception:  # noqa: BLE001 - never let a bad record kill the loop
             msg = str(record.msg)
         self.records.append(
-            LogEntry(ts=record.created, level=record.levelname,
-                     logger=record.name, message=msg)
+            LogEntry(ts=record.created, level=record.levelname, logger=record.name, message=msg)
         )
 
     def snapshot(

@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |------|------|
 | 文書名 | SBCO BACnet B-BC Simulator / Gateway 製品要求仕様書 (Product Requirements Specification) |
-| バージョン | v1.7 (Draft) — ファイル名は参照安定のため `PRD-v1.5.md` を維持 |
+| バージョン | v1.8 (Draft) — ファイル名は参照安定のため `PRD-v1.5.md` を維持 |
 | 上位/関連文書 | SBCO BACnet B-BC Simulator 要件定義書 v1.1 (`../specs/requirements-definition-v1.1.md`) |
 | 位置づけ | 要件定義書の上位文書。「何を・なぜ・誰のために・どこまで満たせば完成か」を定義する |
 | 対象読者 | プロダクトオーナー、システムエンジニア、開発者、品質保証、連携製品開発者 |
@@ -22,6 +22,7 @@
 | v1.5 | 設計 grill (2026-06-07) の確定を反映: **device-mapping mode**（aggregated/multi-device/auto-partition, PR-F-091〜094, CON-8）、**BACnet タグの Brick 由来生成**（PR-F-017 改, AC-14 改）、**南向きアドレス local_id 第一**（PR-F-090 改）。SBCO 原典の事実補正（labels/scale/`&&`/point_type 意味論）。決定: ADR-009〜012、ADR-002/006/007/008 改訂 |
 | v1.6 | **管理者向け Web UI** を追加（EP-007 / MVP-2）。PR-F-053〜057 を新設し PR-F-052 を「任意」から正式要求（S）へ格上げ。北向きは BACnet/IP 稼働状態の内省のみ（ADR-005 厳守、上流プローブなし）、軽量サーバレンダリング（Jinja2 + 素の JS fetch・jinja2 のみ追加・Pi ネイティブ）、初回利用者向けオンボーディングを必須化。AC-15/16 追加。MVP は localhost/LAN・認証なし（認証/外部公開は将来 EPIC） |
 | v1.7 | **BOWS コネクタ（EP-008）** を追加: 仮想 B-BC の北向き BACnet を取り込み、Building OS（`gutp-building-os-oss`）の BACnet ネイティブスキーマ `bacnet-device-message` で MQTT（先行）/ AMQP（将来）へ供給（PR-F-100〜106, PR-NF-030〜032, AC-17〜19）。旧 Non-Goal「接続ゲートウェイ自体の実装」をスコープ内へ。決定: ADR-014/015。（ファイル名は参照安定のため `PRD-v1.5.md` を維持） |
+| v1.8 | **アーキテクチャ＆品質改善（EP-009）** を追加: 横断的な技術的負債返済（カプセル化・重複排除・型安全・例外処理・テスト/CI 強化）。PR-NF-021〜024 を新設。製品要求の追加はなし（振る舞い不変） |
 
 ---
 
@@ -371,6 +372,10 @@ object type 自動推定（PR-F-005）の規定：
 | PR-NF-030 | 相互運用 | BOWS 生成 JSON は Building OS `bacnet-device-message` スキーマに適合する（integration で golden 検証） | M | 2 | EP-008 |
 | PR-NF-031 | 拡張性 | BOWS 配信は Transport 抽象（[[ADR-013]]）に従い、MQTT/AMQP を差し替え可能にする | S | 2 | EP-008 |
 | PR-NF-032 | 自己完結 | BOWS の CI は in-repo フェイク Transport で無人グリーン、実 broker は integration マーカーで任意 | M | 2 | EP-008 |
+| PR-NF-021 | 保守性 | dev 依存は単一テーブルで定義し、`uv sync` 単体で lint/型/テストツールが揃う | S | 2 | EP-009 |
+| PR-NF-022 | 保守性 | モジュール境界をアクセサ/共有ヘルパで保ち、private 属性への外部代入と不要な `Any`/`type: ignore` を避ける | M | 2 | EP-009 |
+| PR-NF-023 | 堅牢性 | 例外は限定捕捉し、握り潰す場合もログに残す（single-loop を止めない範囲で, [[ADR-010]]） | M | 2 | EP-009 |
+| PR-NF-024 | 検証性 | transport・REST 変更系を含む主要経路に自動テストがあり、CI でカバレッジと整形を検査する | M | 2 | EP-009 |
 
 ---
 

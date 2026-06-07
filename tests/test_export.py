@@ -73,7 +73,7 @@ def test_wot_td_has_properties(config):
     td = to_wot_td(config)
     assert td["@type"] == "Thing"
     assert len(td["properties"]) == 8
-    assert td["properties"]["PT001"]["readOnly"] is True   # analog-input
+    assert td["properties"]["PT001"]["readOnly"] is True  # analog-input
     assert td["properties"]["PT006"]["readOnly"] is False  # analog-value (writable)
 
 
