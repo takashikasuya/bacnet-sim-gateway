@@ -11,7 +11,6 @@ from typer.testing import CliRunner
 from bbc_sim.bows.models import BowsConfig
 from bbc_sim.bows.runner import BowsRunner
 from bbc_sim.cli import app
-from bbc_sim.services.client import build_client  # noqa: F401 (ensures import chain ok)
 from bbc_sim.simulator_runtime.app import build_application
 from bbc_sim.southbound.transport import InMemoryTransport
 from bbc_sim.yaml_generator.generator import generate_config

@@ -7,11 +7,14 @@ docs/specs/northbound-bows-buildingos.md §3). Pure function — snapshot-testab
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
 from bbc_sim.bows.models import Reading
 from bbc_sim.models import BacnetObjectType
+
+_log = logging.getLogger(__name__)
 
 # BacnetObjectType -> (_base name, ASHRAE 135 ObjectType enum)
 _OBJECT_TYPE_INFO: dict[BacnetObjectType, tuple[str, int]] = {
@@ -32,7 +35,10 @@ _BINARY_TRUTHY = {"active", "1", "true", "on"}
 def _present_value(object_type: BacnetObjectType, value: Any) -> float | int:
     """Coerce a BACnet present-value to a JSON number (schema: PresentValue=number)."""
     if object_type.is_binary:
-        return 1 if str(value).strip().lower() in _BINARY_TRUTHY else 0
+        normalized = str(value).strip().lower()
+        if normalized not in _BINARY_TRUTHY and normalized not in ("inactive", "0", "false", "off"):
+            _log.debug("binary present-value %r unrecognized; encoding as 0", value)
+        return 1 if normalized in _BINARY_TRUTHY else 0
     if object_type.is_multistate:
         return int(value)
     return float(value)

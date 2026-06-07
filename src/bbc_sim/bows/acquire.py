@@ -10,7 +10,7 @@ import logging
 
 from bbc_sim.bows.models import Reading
 from bbc_sim.models import BacnetObjectType
-from bbc_sim.services.client import list_objects, read_property, whois
+from bbc_sim.services.client import read_property, whois
 
 _log = logging.getLogger(__name__)
 
@@ -40,8 +40,12 @@ async def acquire(client, target: str) -> tuple[int, list[Reading]]:
         return 0, []
     device_instance = found[0][0]
 
+    # Read the object-list directly from the discovered device (avoids a second Who-Is).
+    object_list = await read_property(client, target, f"device,{device_instance}", "object-list")
+
     readings: list[Reading] = []
-    for ident in await list_objects(client, target):
+    for obj in object_list:
+        ident = f"{obj[0]},{obj[1]}"
         type_str, _, inst = ident.partition(",")
         object_type = _DASH_TO_TYPE.get(type_str)
         if object_type is None:

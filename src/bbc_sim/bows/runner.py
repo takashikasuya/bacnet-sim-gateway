@@ -39,7 +39,12 @@ class BowsRunner:
 
     async def start(self) -> None:
         self.client = build_client(self.config.local_address or ephemeral_local())
-        await self.transport.start()
+        try:
+            await self.transport.start()
+        except Exception:  # don't leak the BACnet client if the transport fails to start
+            self.client.close()
+            self.client = None
+            raise
 
     async def stop(self) -> None:
         if self.client is not None:
