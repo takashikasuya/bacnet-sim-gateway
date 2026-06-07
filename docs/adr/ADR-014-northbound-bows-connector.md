@@ -1,6 +1,6 @@
 # ADR-014: Northbound BOWS connector as a separate downstream consumer
 
-**Status:** Accepted  **Date:** 2026-06-07  **Origin:** EP-007（user request）
+**Status:** Accepted  **Date:** 2026-06-07  **Origin:** EP-008（user request）
 
 ## Context
 

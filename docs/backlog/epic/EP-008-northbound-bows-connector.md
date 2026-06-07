@@ -1,4 +1,4 @@
-# EP-007: Northbound BOWS Connector — BACnet → Building OS
+# EP-008: Northbound BOWS Connector — BACnet → Building OS
 
 **Status:** Draft  **Priority:** P1  **MVP:** 2（AMQP/command は MVP-3）
 
@@ -12,9 +12,9 @@
 
 ## Acceptance Criteria（対応 PR-F / AC）
 
-- [ ] **BACnet 取得**: Who-Is で B-BC 発見 → object-list 列挙 → present-value をポーリング取得（任意で COV）（PR-F-100 / AC-15）
-- [ ] **エンコード**: 取得値を `bacnet-device-message` へ決定的に変換（Device_id / BACnetDevice / ObjectType+InstanceNo / PresentValue / ISO-8601 TimeStamp）。原典スキーマ準拠（PR-F-101 / AC-16 / [[ADR-015]]）
-- [ ] **MQTT 配信**: `telemetry/{tenant}/{deviceId}` へ publish。Transport 抽象（[[ADR-013]]）再利用、CI は InMemory フェイク（PR-F-102 / AC-17）
+- [ ] **BACnet 取得**: Who-Is で B-BC 発見 → object-list 列挙 → present-value をポーリング取得（任意で COV）（PR-F-100 / AC-17）
+- [ ] **エンコード**: 取得値を `bacnet-device-message` へ決定的に変換（Device_id / BACnetDevice / ObjectType+InstanceNo / PresentValue / ISO-8601 TimeStamp）。原典スキーマ準拠（PR-F-101 / AC-18 / [[ADR-015]]）
+- [ ] **MQTT 配信**: `telemetry/{tenant}/{deviceId}` へ publish。Transport 抽象（[[ADR-013]]）再利用、CI は InMemory フェイク（PR-F-102 / AC-19）
 - [ ] **CLI/設定**: `bbc-sim bows run`（対象 B-BC・tenant・device_id 写像・broker URI・interval・認証）。single-loop（[[ADR-010]]）（PR-F-103）
 - [ ] **識別子整合**: `Device_id` と BACnet identity を安定発行。`localId={tenant}/{deviceId}`。point_id 解決は Building OS 側（外部依存・PR-F-104）
 - [ ] **テスト/統合環境**: loopback B-BC→BOWS→フェイク broker でスキーマ捕捉、実 Mosquitto＋golden fixtures で適合確認、compose 拡張（PR-NF-030〜032）

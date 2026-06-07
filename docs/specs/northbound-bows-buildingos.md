@@ -7,7 +7,7 @@
 | 項目 | 内容 |
 |------|------|
 | 目的 | 仮想 B-BC の北向き BACnet を取り込み、テレメトリを MQTT/AMQP で Building OS へ供給する規約を定義 |
-| 関連要求 | PR-F-100〜106 / PR-NF-030〜032 / AC-15〜17 |
+| 関連要求 | PR-F-100〜106 / PR-NF-030〜032 / AC-17〜19 |
 | 原典スキーマ | `gutp-building-os-oss` `DotNet/BuildingOS.Shared/Defines/Schemas/bacnet-device-message.json` |
 | 位置づけ | B-BC の**下流**の独立消費者（[[ADR-014]]）。B-BC 自身の北=BACnet/南=binding は不変 |
 

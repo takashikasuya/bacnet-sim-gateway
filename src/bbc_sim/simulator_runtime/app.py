@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -20,14 +21,38 @@ from bacpypes3.apdu import (
 from bacpypes3.app import Application
 from bacpypes3.basetypes import ErrorType, ObjectPropertyReference
 from bacpypes3.errors import ExecutionError
+from bacpypes3.primitivedata import ObjectIdentifier
 
-from bbc_sim.bacnet_objects.builder import build_object_list
+from bbc_sim.bacnet_objects.builder import _OID_TYPE, build_object_list
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.yaml_generator.yaml_io import load_config
 
 _PRESENT_VALUE = {"present-value", "presentValue"}
 
 CommandHook = Callable[[tuple[str, int], Any], Awaitable[None]]
+
+
+@dataclass
+class Counters:
+    """Northbound BACnet request counters (non-blocking int increments, ADR-010)."""
+
+    who_is: int = field(default=0)
+    i_am_sent: int = field(default=0)
+    read_property: int = field(default=0)
+    read_property_multiple: int = field(default=0)
+    write_property: int = field(default=0)
+    write_property_multiple: int = field(default=0)
+    write_access_denied: int = field(default=0)
+
+
+def compute_writable_oids(config: SimulatorConfig) -> frozenset[tuple[str, int]]:
+    """Derive the writable-OID frozenset from config (used by build_application and reload)."""
+    return frozenset(
+        (str(ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))[0]),
+         spec.object_instance)
+        for spec in config.objects
+        if spec.writable
+    )
 
 
 class BBCApplication(Application):
@@ -41,12 +66,27 @@ class BBCApplication(Application):
     _writable_oids: frozenset[tuple[str, int]] = frozenset()
     _command_oids: frozenset[tuple[str, int]] = frozenset()
     on_command: CommandHook | None = None
+    counters: Counters  # set by build_application
+
+    async def do_WhoIsRequest(self, apdu: Any) -> None:  # type: ignore[override]
+        self.counters.who_is += 1
+        await super().do_WhoIsRequest(apdu)  # type: ignore[misc]
+
+    async def do_ReadPropertyRequest(self, apdu: Any) -> None:  # type: ignore[override]
+        self.counters.read_property += 1
+        await super().do_ReadPropertyRequest(apdu)  # type: ignore[misc]
+
+    async def do_ReadPropertyMultipleRequest(self, apdu: Any) -> None:  # type: ignore[override]
+        self.counters.read_property_multiple += 1
+        await super().do_ReadPropertyMultipleRequest(apdu)  # type: ignore[misc]
 
     async def do_WritePropertyRequest(self, apdu: WritePropertyRequest) -> None:
         prop = str(apdu.propertyIdentifier)
         oid = (str(apdu.objectIdentifier[0]), int(apdu.objectIdentifier[1]))
         if prop in _PRESENT_VALUE and oid not in self._writable_oids:
+            self.counters.write_access_denied += 1
             raise ExecutionError(errorClass="property", errorCode="writeAccessDenied")
+        self.counters.write_property += 1
         await super().do_WritePropertyRequest(apdu)
         if prop in _PRESENT_VALUE and self.on_command and oid in self._command_oids:
             obj = self.get_object_id(apdu.objectIdentifier)
@@ -76,6 +116,7 @@ class BBCApplication(Application):
                             propertyIdentifier=prop_value.propertyIdentifier,
                         ),
                     )
+        self.counters.write_property_multiple += 1
         await super().do_WritePropertyMultipleRequest(apdu)
         if not self.on_command:
             return
@@ -96,15 +137,8 @@ def build_application(config: SimulatorConfig, *, with_network: bool = True) -> 
     """
     objects = build_object_list(config, with_network=with_network)
     app = BBCApplication.from_object_list(objects)
-    # Match point objects to specs by object identity, not list position.
-    point_objects = [
-        o for o in objects if str(o.objectIdentifier[0]) not in ("device", "network-port")
-    ]
-    app._writable_oids = frozenset(
-        (str(obj.objectIdentifier[0]), int(obj.objectIdentifier[1]))
-        for obj, spec in zip(point_objects, config.objects, strict=True)
-        if spec.writable
-    )
+    app.counters = Counters()
+    app._writable_oids = compute_writable_oids(config)
     return app
 
 
@@ -113,11 +147,16 @@ async def run_async(
     stop: asyncio.Event | None = None,
     transport_uri: str | None = None,
     rest_port: int | None = None,
+    source_path: Path | None = None,
+    ui_enabled: bool = False,
 ) -> None:
     """Run the full B-BC (server + engine + bindings + optional REST) until stopped."""
     from bbc_sim.simulator_runtime.runtime import Runtime
 
-    runtime = Runtime(config, transport_uri=transport_uri, rest_port=rest_port)
+    runtime = Runtime(
+        config, transport_uri=transport_uri, rest_port=rest_port,
+        source_path=source_path, ui_enabled=ui_enabled,
+    )
     await runtime.run_forever(stop)
 
 
@@ -125,9 +164,14 @@ def run(
     config: SimulatorConfig,
     transport_uri: str | None = None,
     rest_port: int | None = None,
+    source_path: Path | None = None,
+    ui_enabled: bool = False,
 ) -> None:
     """Blocking entry point for the CLI."""
-    asyncio.run(run_async(config, transport_uri=transport_uri, rest_port=rest_port))
+    asyncio.run(run_async(
+        config, transport_uri=transport_uri, rest_port=rest_port,
+        source_path=source_path, ui_enabled=ui_enabled,
+    ))
 
 
 def run_from_path(
@@ -135,4 +179,6 @@ def run_from_path(
     transport_uri: str | None = None,
     rest_port: int | None = None,
 ) -> None:
-    run(load_config(config_path), transport_uri=transport_uri, rest_port=rest_port)
+    p = Path(config_path)
+    run(load_config(p), transport_uri=transport_uri, rest_port=rest_port,
+        source_path=p.resolve())

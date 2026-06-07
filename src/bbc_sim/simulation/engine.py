@@ -53,6 +53,16 @@ class SimulationEngine:
         """Whether any object declares a value-generation mode."""
         return bool(self._generators)
 
+    def rebuild(self, config: SimulatorConfig) -> None:
+        """Rebuild generators from a new config after a live point-list reload."""
+        self.config = config
+        self._generators = []
+        for spec in config.objects:
+            gen = make_generator(spec)
+            if gen is not None:
+                oid = ObjectIdentifier((_OID_TYPE[spec.object_type], spec.object_instance))
+                self._generators.append((spec, oid, gen))
+
     def tick(self, t: float) -> None:
         """Advance all generators to time ``t`` and write presentValue (testable)."""
         for spec, oid, gen in self._generators:

@@ -1,0 +1,15 @@
+{% if northbound %}
+<h3>BACnet 要求カウンタ (累計)</h3>
+<table class="table compact">
+  <thead><tr><th>サービス</th><th>件数</th></tr></thead>
+  <tbody>
+    <tr><td>Who-Is</td><td>{{ northbound.counters.who_is }}</td></tr>
+    <tr><td>I-Am (送信)</td><td>{{ northbound.counters.i_am_sent }}</td></tr>
+    <tr><td>ReadProperty</td><td>{{ northbound.counters.read_property }}</td></tr>
+    <tr><td>ReadPropertyMultiple</td><td>{{ northbound.counters.read_property_multiple }}</td></tr>
+    <tr><td>WriteProperty</td><td>{{ northbound.counters.write_property }}</td></tr>
+    <tr><td>WritePropertyMultiple</td><td>{{ northbound.counters.write_property_multiple }}</td></tr>
+    <tr><td>WriteAccessDenied</td><td class="{{ 'warn' if northbound.counters.write_access_denied > 0 else '' }}">{{ northbound.counters.write_access_denied }}</td></tr>
+  </tbody>
+</table>
+{% endif %}

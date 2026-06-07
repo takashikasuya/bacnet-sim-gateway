@@ -1,0 +1,17 @@
+{% if entries %}
+<table class="table log-table">
+  <thead><tr><th style="width:10em">時刻</th><th style="width:6em">レベル</th><th style="width:14em">ロガー</th><th>メッセージ</th></tr></thead>
+  <tbody>
+  {% for e in entries %}
+    <tr class="log-{{ e.level | lower }}">
+      <td class="mono">{{ "%.3f"|format(e.ts) }}</td>
+      <td class="badge-log-{{ e.level | lower }}">{{ e.level }}</td>
+      <td class="mono small">{{ e.logger }}</td>
+      <td>{{ e.message }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state"><p>ログエントリがありません。</p></div>
+{% endif %}

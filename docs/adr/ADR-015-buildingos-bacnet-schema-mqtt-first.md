@@ -1,6 +1,6 @@
 # ADR-015: Building OS ingestion via BACnet-native schema, MQTT-first
 
-**Status:** Accepted  **Date:** 2026-06-07  **Origin:** EP-007（user request）
+**Status:** Accepted  **Date:** 2026-06-07  **Origin:** EP-008（user request）
 
 ## Context
 

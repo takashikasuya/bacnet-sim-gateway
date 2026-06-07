@@ -50,7 +50,7 @@ SBCO Point List (CSV/XLSX) → YAML Generator → simulator.yaml → B-BC Runtim
 | `bacnet_objects` | Device/Analog/Binary/Multi-state オブジェクトとプロパティ |
 | `services` | BACnet サービス（Who-Is/Read/Write/RPM/COV…） |
 | （南向き）binding 層 | プロトコル非依存モデル → MQTT/ZeroMQ/WoT/gRPC |
-| `bows`（EP-007） | **下流の独立コネクタ**: 仮想 B-BC を BACnet で読み、`bacnet-device-message` に変換し MQTT/AMQP で Building OS へ供給（[[ADR-014]][[ADR-015]]） |
+| `bows`（EP-008） | **下流の独立コネクタ**: 仮想 B-BC を BACnet で読み、`bacnet-device-message` に変換し MQTT/AMQP で Building OS へ供給（[[ADR-014]][[ADR-015]]） |
 
 ### BOWS の位置（北向きの 1 つ上のレイヤ）
 

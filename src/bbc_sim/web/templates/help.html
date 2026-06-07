@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}ヘルプ / オンボーディング — bbc-sim Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>ヘルプ / オンボーディング</h1>
+  <button class="btn-sm" onclick="showTour()">初回ツアーを再表示</button>
+</div>
+
+<nav class="help-toc">
+  <a href="#concept">基本概念</a> |
+  <a href="#modes">動作モード</a> |
+  <a href="#devices">デバイス/オブジェクト</a> |
+  <a href="#bindings">バインディング</a> |
+  <a href="#status">接続状態</a> |
+  <a href="#logs">ログ</a> |
+  <a href="#pointlist">点リスト</a> |
+  <a href="#destructive">破壊的操作</a> |
+  <a href="#workflow">典型的な運用フロー</a>
+</nav>
+
+<section id="concept">
+  <h2>基本概念</h2>
+  <p>bbc-sim は SBCO 標準ポイントリストから <strong>仮想 B-BC（BACnet B-BC デバイス）</strong> を生成し、
+  BACnet/IP で公開します。実設備なしに上流システム（Building OS / Eclipse Hono / Ditto）との
+  結合試験が可能です。</p>
+  <div class="concept-diagram">
+    <div class="cd-box cd-south">SBCO CSV<br>点リスト</div>
+    <div class="cd-arr">→</div>
+    <div class="cd-box cd-core">bbc-sim<br>(B-BC)</div>
+    <div class="cd-arr cd-north">↑ BACnet/IP<br><small>northbound</small></div>
+    <div class="cd-box cd-north">Building OS<br>/ Hono / Ditto</div>
+  </div>
+  <div class="concept-diagram" style="margin-top: 0.5rem;">
+    <div class="cd-box cd-south">MQTT/ZeroMQ<br>gRPC/WoT</div>
+    <div class="cd-arr">→</div>
+    <div class="cd-box cd-core">bbc-sim<br>(B-BC)</div>
+  </div>
+  <dl>
+    <dt>B-BC</dt><dd>BACnet Building Controller — BACnet/IP で公開される仮想デバイス。</dd>
+    <dt>bbc_id</dt><dd>B-BC の識別子。SBCO ポイントリストの <code>gateway_id</code> とは別物（ADR-003）。</dd>
+    <dt>gateway_id</dt><dd>SBCO 側の上流ゲートウェイ識別子。B-BC ID には使用しない。</dd>
+    <dt>northbound</dt><dd>上位方向（Building OS 側）— 常に BACnet/IP（ADR-005）。</dd>
+    <dt>southbound</dt><dd>下位方向（フィールド側）— MQTT / ZeroMQ / WoT / gRPC のバインディング。</dd>
+  </dl>
+</section>
+
+<section id="modes">
+  <h2>動作モード</h2>
+  <dl>
+    <dt>simulator</dt>
+    <dd>内部で値を自動生成（Random Walk / Sinusoidal など）。南向きバインディング不要。上流システムの開発・試験に使用。</dd>
+    <dt>gateway</dt>
+    <dd>南向きプロトコルから受け取った実データを BACnet/IP に反映。実フィールドデータをシミュレートなしに上流へ橋渡し。</dd>
+    <dt>combined</dt>
+    <dd>オブジェクト単位で simulator と gateway を混在。一部は内部生成、一部は実データバインド。</dd>
+  </dl>
+  <p class="note">⚠️ モードの変更にはプロセス再起動が必要です（<a href="#destructive">破壊的操作</a>参照）。</p>
+</section>
+
+<section id="devices">
+  <h2>デバイス/オブジェクト画面</h2>
+  <p>管理中の B-BC デバイスとすべての BACnet オブジェクトを一覧表示します。
+  <code>bbc_id</code>（B-BC 識別子）と <code>device_id</code>（BACnet Device Instance）は
+  <strong>別の値</strong>です（ADR-003）。</p>
+  <p>オブジェクト名をクリックすると詳細画面で値の書込みや Fault 注入ができます。</p>
+</section>
+
+<section id="bindings">
+  <h2>バインディング画面</h2>
+  <p>gateway / combined モード時、各オブジェクトの南向きバインディング状態を表示します。</p>
+  <ul>
+    <li><strong>protocol</strong>: mqtt / zeromq / wot / grpc</li>
+    <li><strong>direction</strong>: telemetry（南→北）/ command（北→南）/ both</li>
+    <li><strong>品質</strong>: good（正常受信）/ bad（最終受信がエラー）/ unknown（未受信）</li>
+  </ul>
+</section>
+
+<section id="status">
+  <h2>接続状態画面</h2>
+  <p>北向き BACnet/IP の稼働状態をローカル内省で表示します。
+  <strong>上流（Hono/Ditto/Building OS）へは直接問い合わせをしません（ADR-005）</strong>。</p>
+  <ul>
+    <li><strong>Bind 状態</strong>: プロセス起動時に BACnet/IP ソケットへバインドできたか</li>
+    <li><strong>BACnet 要求カウンタ</strong>: Who-Is / ReadProperty / WriteProperty などの受信数（プロセス起動後の累計）</li>
+    <li><strong>BBMD / Foreign Device</strong>: 設定値（simulator.yaml の network セクション）</li>
+  </ul>
+</section>
+
+<section id="logs">
+  <h2>ログ画面</h2>
+  <p>プロセス内のリングバッファから直近のログ（最大 1000 件）を表示します。
+  レベルフィルタと自動更新（5 秒）で稼働中の状態を確認できます。</p>
+  <p>捕捉される主なカテゴリ: 検証エラー / バインディング接続失敗 / telemetry 受信エラー / Fault 活動 / BACnet サービス例外</p>
+</section>
+
+<section id="pointlist">
+  <h2>点リスト画面</h2>
+  <p>実行中の simulator.yaml を再読込して差分をライブ適用します。</p>
+  <ul>
+    <li><strong>検証</strong>: 再読込前に YAML を検証し、エラーがある場合は何も変更しません。</li>
+    <li><strong>ライブ適用</strong>: 値/メタデータ/writable/update の変更、オブジェクトの追加・削除を適用。</li>
+    <li><strong>再起動必要</strong>: object_type / object_instance / network 設定の変更はプロセス再起動が必要。</li>
+  </ul>
+  <p class="note">注: <code>bbc-sim run --source-path &lt;yaml&gt;</code> を指定しないと再読込できません。</p>
+</section>
+
+<section id="destructive">
+  <h2>破壊的操作の注意</h2>
+  <table class="table">
+    <thead><tr><th>操作</th><th>影響範囲</th><th>回復方法</th></tr></thead>
+    <tbody>
+      <tr><td>値の書込み</td><td>対象オブジェクトの presentValue が変わる。北向き ReadProperty で上流に見える。</td><td>再度書込みか YAML から再起動で初期値に戻る。</td></tr>
+      <tr><td>Fault 注入</td><td>statusFlags / outOfService / eventState が変わる。上流に異常として見える。</td><td><code>fault: clear</code> で正常化。</td></tr>
+      <tr><td>OutOfService</td><td>オブジェクトが Out-of-Service 状態に。書込みは引き続き受け付ける。</td><td><code>fault: clear</code> で解除。</td></tr>
+      <tr><td>点リスト再読込</td><td>オブジェクトの追加・削除・属性変更。削除されたオブジェクトは即座に消える。</td><td>YAML を元に戻して再読込か再起動。</td></tr>
+      <tr><td>モード変更</td><td>simulator ↔ gateway ↔ combined は再起動が必要。</td><td>CLI で <code>--mode</code> を指定して再起動。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="workflow">
+  <h2>典型的な運用フロー</h2>
+  <ol>
+    <li>SBCO CSV から YAML を生成: <code>bbc-sim generate-yaml --input list.csv --output config.yaml --bbc-id bbc-001 --bacnet-device-id 1001</code></li>
+    <li>起動: <code>bbc-sim run --config config.yaml --rest-port 8080 --ui</code></li>
+    <li>Dashboard でバインド状態とオブジェクト数を確認。</li>
+    <li>デバイス/オブジェクト画面で値と型を確認。</li>
+    <li>YABE などの BACnet Explorer から北向き接続を検証（接続状態画面でカウンタ確認）。</li>
+    <li>異常系試験: オブジェクト詳細画面から Fault を注入し、上流の挙動を確認。</li>
+    <li>点リスト更新: YAML を編集し点リスト画面から再読込。</li>
+  </ol>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+// Show tour again from help page
+document.addEventListener('DOMContentLoaded', () => {
+  const tourBtn = document.querySelector('button[onclick="showTour()"]');
+  if (tourBtn) tourBtn.style.display = 'inline-block';
+});
+</script>
+{% endblock %}

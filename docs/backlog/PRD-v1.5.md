@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |------|------|
 | 文書名 | SBCO BACnet B-BC Simulator / Gateway 製品要求仕様書 (Product Requirements Specification) |
-| バージョン | v1.6 (Draft) — ファイル名は参照安定のため `PRD-v1.5.md` を維持 |
+| バージョン | v1.7 (Draft) — ファイル名は参照安定のため `PRD-v1.5.md` を維持 |
 | 上位/関連文書 | SBCO BACnet B-BC Simulator 要件定義書 v1.1 (`../specs/requirements-definition-v1.1.md`) |
 | 位置づけ | 要件定義書の上位文書。「何を・なぜ・誰のために・どこまで満たせば完成か」を定義する |
 | 対象読者 | プロダクトオーナー、システムエンジニア、開発者、品質保証、連携製品開発者 |
@@ -20,7 +20,8 @@
 | v1.3 | 各 BACnet オブジェクトに**セマンティックタグ（`tags` プロパティ）**を付与する要求を追加。SBCO `tags` 列から決定的に生成し、語彙は **BACnet 標準タグ ＋ Project Haystack** を既定（将来 ASHRAE 223P へ連携） |
 | v1.4 | **Raspberry Pi（ARM）でのネイティブ実行**を要求化（PR-NF-019/020）。Docker は配布手段の一つであり必須ではない。SBCO 原典リポジトリの URL を明記 |
 | v1.5 | 設計 grill (2026-06-07) の確定を反映: **device-mapping mode**（aggregated/multi-device/auto-partition, PR-F-091〜094, CON-8）、**BACnet タグの Brick 由来生成**（PR-F-017 改, AC-14 改）、**南向きアドレス local_id 第一**（PR-F-090 改）。SBCO 原典の事実補正（labels/scale/`&&`/point_type 意味論）。決定: ADR-009〜012、ADR-002/006/007/008 改訂 |
-| v1.6 | **BOWS コネクタ（EP-007）** を追加: 仮想 B-BC の北向き BACnet を取り込み、Building OS（`gutp-building-os-oss`）の BACnet ネイティブスキーマ `bacnet-device-message` で MQTT（先行）/ AMQP（将来）へ供給（PR-F-100〜106, PR-NF-030〜032, AC-15〜17）。旧 Non-Goal「接続ゲートウェイ自体の実装」をスコープ内へ。決定: ADR-014/015。（ファイル名は参照安定のため `PRD-v1.5.md` を維持） |
+| v1.6 | **管理者向け Web UI** を追加（EP-007 / MVP-2）。PR-F-053〜057 を新設し PR-F-052 を「任意」から正式要求（S）へ格上げ。北向きは BACnet/IP 稼働状態の内省のみ（ADR-005 厳守、上流プローブなし）、軽量サーバレンダリング（Jinja2 + 素の JS fetch・jinja2 のみ追加・Pi ネイティブ）、初回利用者向けオンボーディングを必須化。AC-15/16 追加。MVP は localhost/LAN・認証なし（認証/外部公開は将来 EPIC） |
+| v1.7 | **BOWS コネクタ（EP-008）** を追加: 仮想 B-BC の北向き BACnet を取り込み、Building OS（`gutp-building-os-oss`）の BACnet ネイティブスキーマ `bacnet-device-message` で MQTT（先行）/ AMQP（将来）へ供給（PR-F-100〜106, PR-NF-030〜032, AC-17〜19）。旧 Non-Goal「接続ゲートウェイ自体の実装」をスコープ内へ。決定: ADR-014/015。（ファイル名は参照安定のため `PRD-v1.5.md` を維持） |
 
 ---
 
@@ -99,7 +100,7 @@
 - REST API による情報取得・制御・シナリオ操作
 - CLI ツール群
 - **ネイティブ実行（Raspberry Pi / ARM、Docker 非依存）** ＋ Docker / Docker Compose による配布・統合試験環境
-- **BOWS コネクタ（EP-007）**: 仮想 B-BC の北向き BACnet を取り込み、テレメトリを MQTT（先行）/ AMQP で Building OS（`gutp-building-os-oss`）へ供給（[[ADR-014]][[ADR-015]]）
+- **BOWS コネクタ（EP-008）**: 仮想 B-BC の北向き BACnet を取り込み、テレメトリを MQTT（先行）/ AMQP で Building OS（`gutp-building-os-oss`）へ供給（[[ADR-014]][[ADR-015]]）
 
 ### 3.2 スコープ外 / 将来対象 (Out of Scope / Future)
 
@@ -115,7 +116,7 @@
 | 将来対象 | BOWS の AMQP/Hono トランスポート（PR-F-105）、下り制御 device-control→WriteProperty（PR-F-106） |
 | 範囲外 | ゲートウェイの本番 HA・大規模運用（当面） |
 
-> **スコープ変更（EP-007）**: 旧「上位接続ゲートウェイ自体の実装」は **BOWS コネクタとしてスコープ内**へ移動（[[ADR-014]]）。
+> **スコープ変更（EP-008）**: 旧「上位接続ゲートウェイ自体の実装」は **BOWS コネクタとしてスコープ内**へ移動（[[ADR-014]]）。
 
 ---
 
@@ -297,7 +298,7 @@ object type 自動推定（PR-F-005）の規定：
 
 > 詳細は `../specs/device-mapping.md`・[[ADR-011]]。ペルソナ指針: Building OS 開発者→aggregated、Gateway 開発者→multi-device。
 
-#### BOWS コネクタ — BACnet → Building OS（EP-007 / [[ADR-014]][[ADR-015]]）
+#### BOWS コネクタ — BACnet → Building OS（EP-008 / [[ADR-014]][[ADR-015]]）
 
 | ID | 要求 | 優先度 | MVP | 原典 |
 |----|------|:---:|:---:|:---:|
@@ -316,7 +317,12 @@ object type 自動推定（PR-F-005）の規定：
 | ID | 要求 | 優先度 | MVP | 原典 |
 |----|------|:---:|:---:|:---:|
 | PR-F-050 | REST API で device/object 情報取得・値書込・シナリオ変更を提供する | S | 2 | 17 |
-| PR-F-052 | Web UI を提供する（任意） | C | 2 | 3 |
+| PR-F-052 | 管理者向け Web UI を提供する（状態確認・値/状態変更・ログ・バインディング・点リスト再読込・オンボーディング） | S | 2 | 3 |
+| PR-F-053 | REST/UI でログ（検証/バインディング/Fault/BACnet サービス）を閲覧できる | S | 2 | 新 |
+| PR-F-054 | REST/UI で runtime 状態（mode・北向き bind/カウンタ・南向き接続）を取得できる | S | 2 | 新 |
+| PR-F-055 | REST/UI で南向きバインディング状態（protocol/address/最終更新/品質）を確認できる | S | 2 | 新 |
+| PR-F-056 | REST/UI で点リスト再読込（検証→差分→適用 or 再起動要求）を実行できる | S | 2 | 新 |
+| PR-F-057 | 初回利用者向けオンボーディング（ガイド付きツアー・常設 Help・コンテキストヘルプ・空状態ガイド）を提供する | S | 2 | 新 |
 
 #### CLI
 
@@ -362,9 +368,9 @@ object type 自動推定（PR-F-005）の規定：
 | PR-NF-018 | 意味相互運用 | タグ語彙（BACnet 標準タグ＋Haystack）を一貫適用し、未知タグは検証で警告する | S | 2 | 新 |
 | PR-NF-019 | 移植性 | Raspberry Pi（ARM/ARM64）上でネイティブに動作する | M | 1 | 新 |
 | PR-NF-020 | 移植性 | Docker 非依存のネイティブ実行（uv 等）を提供する。Docker は推奨配布手段の一つであり必須ではない | M | 1 | 新 |
-| PR-NF-030 | 相互運用 | BOWS 生成 JSON は Building OS `bacnet-device-message` スキーマに適合する（integration で golden 検証） | M | 2 | EP-007 |
-| PR-NF-031 | 拡張性 | BOWS 配信は Transport 抽象（[[ADR-013]]）に従い、MQTT/AMQP を差し替え可能にする | S | 2 | EP-007 |
-| PR-NF-032 | 自己完結 | BOWS の CI は in-repo フェイク Transport で無人グリーン、実 broker は integration マーカーで任意 | M | 2 | EP-007 |
+| PR-NF-030 | 相互運用 | BOWS 生成 JSON は Building OS `bacnet-device-message` スキーマに適合する（integration で golden 検証） | M | 2 | EP-008 |
+| PR-NF-031 | 拡張性 | BOWS 配信は Transport 抽象（[[ADR-013]]）に従い、MQTT/AMQP を差し替え可能にする | S | 2 | EP-008 |
+| PR-NF-032 | 自己完結 | BOWS の CI は in-repo フェイク Transport で無人グリーン、実 broker は integration マーカーで任意 | M | 2 | EP-008 |
 
 ---
 
@@ -415,9 +421,11 @@ object type 自動推定（PR-F-005）の規定：
 | AC-12 | Combined モードで内部生成と南向きバインドのオブジェクトを同一 BACnet/IP に同時公開できる | （新）TS-12 想定 | PR-F-080,081 |
 | AC-13 | ZeroMQ / WoT / gRPC の各南向きバインディングで取込・コマンド送出ができる | （新）TS-13 想定 | PR-F-085,086,087 |
 | AC-14 | オブジェクトの `tags` プロパティを ReadProperty で取得でき、内容が **device_type/point_type の Brick クラスから導出**された語彙整合タグである。SBCO `tags` 列は `metadata.search_tags` に保持 | （新）TS-14 想定 | PR-F-016,017 / ADR-012 |
-| AC-15 | BOWS が仮想 B-BC を BACnet で取り込み、present-value を取得できる | （新）TS-15 想定 | PR-F-100 |
-| AC-16 | BOWS の生成 JSON が Building OS `bacnet-device-message` スキーマに適合する | （新）TS-15 想定 | PR-F-101 / PR-NF-030 |
-| AC-17 | BOWS が `telemetry/{tenant}/{deviceId}` へ MQTT publish し、Building OS が取り込める | （新）TS-16 想定 | PR-F-102 / AC-8 |
+| AC-15 | 管理 UI から主要管理操作（状態確認・値書込・Fault・点リスト再読込・ログ閲覧）が完結できる | （新）TS-15 想定 | PR-F-052,053,054,055,056 |
+| AC-16 | 初回利用者が初回ツアー／Help ページから概念（北向き/南向き・モード）と主要操作を理解できる | （新）TS-16 想定 | PR-F-057 |
+| AC-17 | BOWS が仮想 B-BC を BACnet で取り込み、present-value を取得できる | （新）TS-17 想定 | PR-F-100 |
+| AC-18 | BOWS の生成 JSON が Building OS `bacnet-device-message` スキーマに適合する | （新）TS-17 想定 | PR-F-101 / PR-NF-030 |
+| AC-19 | BOWS が `telemetry/{tenant}/{deviceId}` へ MQTT publish し、Building OS が取り込める | （新）TS-18 想定 | PR-F-102 / AC-8 |
 
 ### 10.2 成功指標 (Success Metrics)
 
@@ -437,7 +445,7 @@ object type 自動推定（PR-F-005）の規定：
 | フェーズ | 主要スコープ | 含む要求（抜粋） |
 |---------|--------------|------------------|
 | MVP-1 | SBCO→YAML→1 B-BC、Who-Is/I-Am、Read/ReadMultiple/WriteProperty、Docker 起動、YABE 北向き接続確認（Simulator） | PR-F-001〜007,010〜024,040,060〜062 / PR-NF-001,003,005,008,009 |
-| MVP-2 | モード機構、南向きバインディング（MQTT/ZeroMQ/gRPC）、北向き BACnet の Hono/Ditto/Building OS 取込、COV、WritePropertyMultiple、REST、Fault、BBMD、**BOWS コネクタ（BACnet→MQTT→Building OS, EP-007）** | PR-F-025〜031,041,050,080〜085,087〜090,063,100〜104 / PR-NF-002,007,010,013〜017,030〜032 |
+| MVP-2 | モード機構、南向きバインディング（MQTT/ZeroMQ/gRPC）、北向き BACnet の Hono/Ditto/Building OS 取込、COV、WritePropertyMultiple、REST、Fault、BBMD、管理者向け Web UI（EP-007）、**BOWS コネクタ（BACnet→MQTT→Building OS, EP-008）** | PR-F-025〜031,041,050,052〜057,080〜085,087〜090,063,100〜104 / PR-NF-002,007,010,013〜017,030〜032 |
 | MVP-3 | Web of Things 南向きバインディング、BACnet/SC、PICS/EDE 生成、BTL 適合支援、意味モデル出力、**BOWS の AMQP/Hono・下り制御（PR-F-105,106）** | PR-F-070〜073,086,105,106 |
 
 ---
