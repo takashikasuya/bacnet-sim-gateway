@@ -142,13 +142,14 @@ async def test_bad_payload_does_not_kill_loop_and_marks_quality_bad(gateway_app,
 
     app, cfg, transport, ai, _av = gateway_app
     tele, _ = channels(ai)
-    with caplog.at_level(logging.ERROR, logger="bbc_sim.southbound.binding"):
+    with caplog.at_level(logging.WARNING, logger="bbc_sim.southbound.binding"):
         await transport.feed(tele, b"not-json{{{")  # must not raise
+    # The malformed JSON is an expected "bad payload" -> warning, quality bad.
+    assert any("bad telemetry payload" in r.getMessage() for r in caplog.records)
     # A subsequent valid payload must still work — the subscription survived.
     await transport.feed(tele, json.dumps({"value": 12.0}).encode())
     obj = app.get_object_id(ObjectIdentifier(("analogInput", ai.object_instance)))
     assert float(obj.presentValue) == pytest.approx(12.0)
-    assert any("telemetry handling failed" in r.getMessage() for r in caplog.records)
 
 
 async def test_logical_equivalence_telemetry(gateway_app):  # AC-13 / PR-NF-017

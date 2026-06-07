@@ -34,16 +34,19 @@ async def test_publish_forwards_to_client(transport):
 
 async def test_on_message_dispatches_to_handler_on_loop(transport):
     received: list[tuple[str, bytes]] = []
+    done = asyncio.Event()
 
     async def handler(channel: str, payload: bytes) -> None:
         received.append((channel, payload))
+        done.set()
 
     transport.subscribe("telemetry/x", handler)
     transport._loop = asyncio.get_running_loop()  # set by start() in production
 
     msg = SimpleNamespace(topic="telemetry/x", payload=b"hello")
     transport._on_message(None, None, msg)  # called from paho's thread in production
-    await asyncio.sleep(0.05)  # let run_coroutine_threadsafe drain
+    # Deterministic wait for the loop to drain run_coroutine_threadsafe.
+    await asyncio.wait_for(done.wait(), timeout=1.0)
 
     assert received == [("telemetry/x", b"hello")]
 
@@ -59,8 +62,7 @@ async def test_on_message_without_loop_is_noop(transport):
     transport._loop = None  # start() not called yet
 
     msg = SimpleNamespace(topic="telemetry/x", payload=b"hello")
-    transport._on_message(None, None, msg)  # must not raise
-    await asyncio.sleep(0.05)
+    transport._on_message(None, None, msg)  # returns synchronously, schedules nothing
     assert handler_called is False
 
 
@@ -70,6 +72,5 @@ async def test_on_message_unknown_topic_is_noop(transport):
     transport._loop = asyncio.get_running_loop()
 
     msg = SimpleNamespace(topic="telemetry/UNKNOWN", payload=b"x")
-    transport._on_message(None, None, msg)
-    await asyncio.sleep(0.05)
+    transport._on_message(None, None, msg)  # no matching handler -> schedules nothing
     handler.assert_not_called()

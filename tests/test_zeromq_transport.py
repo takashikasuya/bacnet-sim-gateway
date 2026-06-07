@@ -48,6 +48,15 @@ async def test_dispatch_skips_malformed_multipart(transport, caplog, frames):
     assert any("malformed multipart" in r.getMessage() for r in caplog.records)
 
 
+async def test_dispatch_skips_non_utf8_channel(transport, caplog):
+    handler = AsyncMock()
+    transport.subscribe("telemetry/x", handler)
+    with caplog.at_level(logging.WARNING, logger="bbc_sim.southbound.zeromq"):
+        await transport._dispatch([b"\xff\xfe", b"payload"])  # invalid UTF-8 channel
+    handler.assert_not_awaited()
+    assert any("non-UTF-8" in r.getMessage() for r in caplog.records)
+
+
 async def test_publish_sends_multipart_frames(transport):
     # MagicMock keeps .close() synchronous for fixture teardown; only the awaited
     # send_multipart needs to be async.

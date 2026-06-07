@@ -69,9 +69,14 @@ def test_sinusoidal_rejects_nonpositive_period():
 
 
 def test_value_generator_is_abstract():
-    """The base class must not be instantiable directly (EP-009.11)."""
-    with pytest.raises(TypeError):
-        ValueGenerator()  # type: ignore[abstract]
+    """The base class must not be instantiable even with valid args (EP-009.11).
+
+    Passing a valid spec ensures the TypeError is due to the abstract next()
+    method, not a missing constructor argument.
+    """
+    spec = _analog(mode="random_walk")
+    with pytest.raises(TypeError, match="abstract"):
+        ValueGenerator(spec)  # type: ignore[abstract]
 
 
 def test_replay_cursor_resets_on_fresh_instance():

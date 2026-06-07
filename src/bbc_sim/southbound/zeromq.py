@@ -1,8 +1,12 @@
-"""ZeroMQ southbound transport (pyzmq async). Real network I/O; tests are integration.
+"""ZeroMQ southbound transport (pyzmq async).
 
 Uses a SUB socket for telemetry (multipart: channel, payload) and a PUB socket for
 commands. Both sockets ``connect()`` to the given endpoints (a broker/proxy is expected
 to bind). Configurable bind/connect roles are a future enhancement.
+
+Real socket I/O is exercised by the integration suite; the message-dispatch logic
+(routing, malformed/invalid frames) is unit-tested in ``tests/test_zeromq_transport.py``
+without a broker.
 """
 
 from __future__ import annotations
@@ -64,6 +68,10 @@ class ZmqTransport:
             _log.warning("ignoring malformed multipart message with %d frame(s)", len(frames))
             return
         channel_b, payload = frames
-        channel = channel_b.decode()
+        try:
+            channel = channel_b.decode()
+        except UnicodeDecodeError:
+            _log.warning("ignoring multipart message with non-UTF-8 channel frame")
+            return
         for handler in self._handlers.get(channel, []):
             await handler(channel, payload)

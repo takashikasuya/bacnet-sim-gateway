@@ -99,6 +99,11 @@ class SouthboundManager:
     def _telemetry_handler(self, spec: BacnetObjectSpec):
         oid = spec_to_oid(spec)
 
+        def _mark_bad() -> None:
+            self._last_telemetry[spec.point_id] = TelemetryRecord(
+                ts=time.time(), value=None, quality="bad"
+            )
+
         async def handler(_channel: str, payload: bytes) -> None:
             try:
                 value = telemetry_to_present_value(spec, payload)
@@ -108,11 +113,14 @@ class SouthboundManager:
                 self._last_telemetry[spec.point_id] = TelemetryRecord(
                     ts=time.time(), value=value, quality="good"
                 )
-            except Exception:  # noqa: BLE001 - never let a bad payload kill the loop
-                _log.exception("telemetry handling failed for %s", spec.point_id)
-                self._last_telemetry[spec.point_id] = TelemetryRecord(
-                    ts=time.time(), value=None, quality="bad"
-                )
+            except (ValueError, TypeError, KeyError) as exc:
+                # Expected "bad payload": decode / value-conversion failures
+                # (json.JSONDecodeError is a ValueError subclass) — EP-009.4.
+                _log.warning("bad telemetry payload for %s: %s", spec.point_id, exc)
+                _mark_bad()
+            except Exception:  # noqa: BLE001 - unexpected; never kill the loop (ADR-010)
+                _log.exception("unexpected telemetry handler error for %s", spec.point_id)
+                _mark_bad()
 
         return handler
 
