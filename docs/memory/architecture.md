@@ -50,6 +50,15 @@ SBCO Point List (CSV/XLSX) → YAML Generator → simulator.yaml → B-BC Runtim
 | `bacnet_objects` | Device/Analog/Binary/Multi-state オブジェクトとプロパティ |
 | `services` | BACnet サービス（Who-Is/Read/Write/RPM/COV…） |
 | （南向き）binding 層 | プロトコル非依存モデル → MQTT/ZeroMQ/WoT/gRPC |
+| `bows`（EP-007） | **下流の独立コネクタ**: 仮想 B-BC を BACnet で読み、`bacnet-device-message` に変換し MQTT/AMQP で Building OS へ供給（[[ADR-014]][[ADR-015]]） |
+
+### BOWS の位置（北向きの 1 つ上のレイヤ）
+
+```
+[仮想 B-BC] ──BACnet/IP(北)──▶ [BOWS] ──MQTT/AMQP──▶ [Building OS]
+  (bbc-sim, ADR-005)            BACnet client + publisher   (gutp-building-os-oss)
+```
+BOWS の MQTT/AMQP は B-BC のインターフェースではなく**コネクタ→Building OS のリンク**。B-BC の方向定義（[[ADR-005]]）は不変。
 
 ## 主要制約
 
