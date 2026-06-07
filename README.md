@@ -288,7 +288,4 @@ Vision → Memory → ADR → Backlog → Spec
 
 ## ライセンス
 
-[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)。
-
-> 注: `pyproject.toml` ではライセンスを Apache-2.0 と宣言していますが、リポジトリ直下に
-> `LICENSE` ファイルが未配置です。配布前に `LICENSE` を追加してください。
+[Apache License 2.0](LICENSE)。
