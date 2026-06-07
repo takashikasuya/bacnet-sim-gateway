@@ -3,7 +3,7 @@
 > 本書は bbc-sim の**代表的な通信**をシーケンス図（Mermaid）で示す設計ドキュメントです。
 > 各図は実装（`src/bbc_sim/`）に対応し、関連する ADR を併記します。
 > 関連: [`operating-modes.md`](operating-modes.md)（モード）, [`southbound-binding.md`](southbound-binding.md)（南向き）,
-> [`northbound-bows-buildingos.md`](northbound-bows-buildingos.md)（BOWS）, `../memory/architecture.md`（全体像）。
+> [`northbound-bows-buildingos.md`](northbound-bows-buildingos.md)（BOWS）, [`../memory/architecture.md`](../memory/architecture.md)（全体像）。
 
 ## 不変条件（全図に共通）
 
