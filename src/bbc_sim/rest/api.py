@@ -8,7 +8,7 @@ endpoints and mounts the server-rendered Web UI under /ui.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from bacpypes3.primitivedata import ObjectIdentifier
 from fastapi import FastAPI, HTTPException
@@ -18,6 +18,10 @@ from bbc_sim.bacnet_objects.builder import spec_to_oid
 from bbc_sim.models import SimulatorConfig
 from bbc_sim.simulation.fault import FaultController, FaultType
 from bbc_sim.simulator_runtime.app import BBCApplication
+
+if TYPE_CHECKING:
+    from bbc_sim.rest.reload import PointListReloader
+    from bbc_sim.rest.status import StatusProvider
 
 
 class WriteRequest(BaseModel):
@@ -35,8 +39,8 @@ def create_app(
     config: SimulatorConfig,
     faults: FaultController | None = None,
     *,
-    status: Any | None = None,  # StatusProvider | None
-    reloader: Any | None = None,  # PointListReloader | None
+    status: StatusProvider | None = None,
+    reloader: PointListReloader | None = None,
     ui_enabled: bool = False,
 ) -> FastAPI:
     faults = faults or FaultController()

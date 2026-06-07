@@ -11,12 +11,19 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
+
+from bbc_sim.models import SimulatorConfig
+from bbc_sim.simulator_runtime.app import BBCApplication
+
+if TYPE_CHECKING:
+    from bbc_sim.rest.reload import PointListReloader
+    from bbc_sim.rest.status import StatusProvider
 
 _HERE = Path(__file__).parent
 _templates = Jinja2Templates(directory=str(_HERE / "templates"))
@@ -24,7 +31,7 @@ _templates = Jinja2Templates(directory=str(_HERE / "templates"))
 # context helpers consumed by both full pages and partials
 
 
-def _obj_list(config: Any, app: Any) -> list[dict[str, Any]]:
+def _obj_list(config: SimulatorConfig, app: BBCApplication) -> list[dict[str, Any]]:
     from bbc_sim.bacnet_objects.builder import spec_to_oid
 
     result = []
@@ -51,10 +58,10 @@ def _obj_list(config: Any, app: Any) -> list[dict[str, Any]]:
 
 
 def create_web_router(
-    config: Any,
-    app: Any,
-    status: Any | None,
-    reloader: Any | None,
+    config: SimulatorConfig,
+    app: BBCApplication,
+    status: StatusProvider | None,
+    reloader: PointListReloader | None,
 ) -> APIRouter:
     router = APIRouter(prefix="/ui")
 

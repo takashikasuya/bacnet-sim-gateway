@@ -10,12 +10,17 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 from bbc_sim.models import RuntimeMode, SimulatorConfig
 from bbc_sim.simulation.engine import SimulationEngine
 from bbc_sim.simulation.fault import FaultController
 from bbc_sim.simulator_runtime.app import BBCApplication, build_application
+
+if TYPE_CHECKING:
+    import uvicorn
+
+    from bbc_sim.southbound.binding import SouthboundManager
 
 _log = logging.getLogger(__name__)
 
@@ -50,8 +55,8 @@ class Runtime:
             if engine.has_generators():  # only run if something is actually generated
                 self.engine = engine
 
-        self.manager: Any = None  # SouthboundManager (gateway/combined)
-        self._rest_server: Any = None  # uvicorn.Server
+        self.manager: SouthboundManager | None = None  # gateway/combined only
+        self._rest_server: uvicorn.Server | None = None
         self._rest_task: asyncio.Task[None] | None = None
 
         # Observability: ring-buffer log handler (EP-007.1)
