@@ -52,8 +52,16 @@ class BowsRunner:
         await self.transport.stop()
 
     async def poll_once(self) -> list[dict[str, Any]]:
-        """Acquire the B-BC, encode, publish once. Returns the message sent."""
+        """Acquire the B-BC, encode, publish once. Returns the message sent.
+
+        If the target can't be discovered / has no readable points, ``acquire``
+        returns no readings; skip publishing so an unreachable target doesn't emit
+        misleading empty telemetry downstream.
+        """
         device_instance, readings = await acquire(self.client, self.config.target)
+        if not readings:
+            _log.warning("BOWS: no readings acquired from %s; skipping publish", self.config.target)
+            return []
         message = encode_device_message(
             self.config.device_id, device_instance, readings, now=datetime.now(UTC)
         )

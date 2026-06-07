@@ -73,3 +73,24 @@ async def test_poll_once_publishes_valid_message(bbc_server):
     assert entry["BACnetDevice"] == 1001
     assert "ObjectType" in entry["BACnetObject"]["_value"]
     assert isinstance(entry["Properties"]["PresentValue"], (int, float))
+
+
+async def test_poll_once_skips_publish_when_no_device():
+    """Unreachable target (acquire returns no readings) must not publish empty telemetry."""
+
+    class _NoDevice:
+        async def who_is(self, *_a, **_k):
+            return []  # nothing discovered
+
+    transport = InMemoryTransport()
+    cfg = BowsConfig(target="127.0.0.1", device_id="bbc-local-001", tenant="default")
+    bows = BowsRunner(cfg, transport=transport)
+    bows.client = _NoDevice()
+    await transport.start()
+    try:
+        message = await bows.poll_once()
+    finally:
+        await transport.stop()
+
+    assert message == []
+    assert transport.published == []  # nothing published when there are no readings
