@@ -127,9 +127,36 @@
 - TimeStamp が ISO-8601（TZ 付き）。
 - integration: 実 Mosquitto に publish → Building OS の golden fixtures（**Building OS 側リポジトリ `gutp-building-os-oss` の** `tests/golden/`。本リポジトリ内のパスではない）と整合確認。
 
-## 7. 将来（本仕様の対象外）❓
+## 7. 下り制御（Building OS GatewayEgress / gRPC）✅（[[ADR-017]]・#67）
 
-- **AMQP/Hono トランスポート**（`/telemetry/{tenant}`）。
-- **下り制御**: Building OS `POST /api/device-control`（type=BACnet）→ BACnet WriteProperty で
-  仮想 B-BC を制御する往復ループ。
+Building OS は下り経路の受け口を **gRPC `GatewayEgress`** として提供する。BOWS は building-edge の
+**gRPC クライアント**として上流へダイヤルアウトし（インバウンドポート不要）、ゲートウェイごとに
+**1 本の双方向 stream** を `Hello{gateway_id}` で確立する。`gateway_id` は上流ゲートウェイ識別子で
+あり bbc_id ではない（[[ADR-003]]）。
+
+```
+[Building OS] ──gRPC GatewayEgress.Connect (mTLS)── ▶ [BOWS]
+   ServerMessage{ControlCommand}  ──▶  BACnet WriteProperty(present-value) ──▶ [仮想 B-BC]
+   ◀── ClientMessage{ControlResult{control_id, success, response}}  （WaitForResult まで通知）
+```
+
+- **受信**: `ControlCommand{control_id, point_id, bacnet_device, object_type, instance_no,
+  present_value, priority}`。
+- **実行**: `(object_type, instance_no)` から objid を組み立て、値を型別に変換して
+  WriteProperty（`services/client.py` 流用、`priority` は書込優先度 1..16）。
+  analog→数値 / binary→0|1（≥0.5 で active）/ multi-state→状態番号。書込対象は writable のみ。
+- **結果**: `ControlResult` を返却。失敗（未知 type / writeAccessDenied / 例外）は `success=false` ＋
+  理由で返し、stream は落とさない。
+- **接続健全性**: keepalive、reconnect + jitter、**mTLS**（証明書は環境変数
+  `BOWS_EGRESS_TLS_CA/CERT/KEY` 注入、既定なし）。`grpc` は optional-extra（`uv sync --extra grpc`）で
+  遅延 import、`grpc.aio` でイベントループを塞がない（[[ADR-010]]）。
+- 正の契約は Building OS `gutp-building-os-oss`（`docs/oss-egress-gateway-bridge-plan.md`、#159/#163）。
+  本リポの `proto/gateway_egress.proto` は対向定義で、確定差分は同期する 🔧。
+
+> 旧案（[[ADR-016]] の `Transport.subscribe` + `ControlSchema` による MQTT/AMQP コマンドチャネル、
+> および `POST /api/device-control` 前提）は [[ADR-017]] で **置換**された。
+
+## 8. 将来（本仕様の対象外）❓
+
+- **AMQP/Hono テレメトリ トランスポート**（`/telemetry/{tenant}`、#48）。
 - 配信保証（at-least-once/QoS/retain）、バッチング/レート制御、TLS/認証の本番設定。

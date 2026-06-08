@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import typer
 
+from bbc_sim.bows.downlink.client import run as run_egress
+from bbc_sim.bows.downlink.models import EgressConfig
 from bbc_sim.bows.models import BowsConfig
 from bbc_sim.bows.runner import run as run_bows
 
@@ -41,6 +43,38 @@ def register(app: typer.Typer) -> None:
         )
         try:
             run_bows(config)
+        except KeyboardInterrupt:  # pragma: no cover - interactive
+            typer.echo("stopped")
+
+    @bows_app.command("egress")
+    def egress(
+        endpoint: str = typer.Option(..., "--endpoint", help="Building OS GatewayEgress host:port"),
+        gateway_id: str = typer.Option(..., "--gateway-id", "-g", help="upstream gateway id"),
+        target: str = typer.Option(..., "--target", "-t", help="B-BC address host:port to write"),
+        tenant: str = typer.Option("default", "--tenant", help="Building OS tenant"),
+        local: str | None = typer.Option(None, "--local", help="local BACnet bind host:port"),
+        insecure: bool = typer.Option(False, "--insecure", help="disable mTLS (dev/loopback only)"),
+    ) -> None:
+        """Subscribe Building OS GatewayEgress (gRPC) and apply ControlCommands as WriteProperty.
+
+        Needs the optional `grpc` extra: uv sync --extra grpc (ADR-017).
+        """
+        config = EgressConfig(
+            endpoint=endpoint,
+            gateway_id=gateway_id,
+            target=target,
+            tenant=tenant,
+            local_address=local,
+            tls=not insecure,
+        )
+        scheme = "insecure" if insecure else "mTLS"
+        typer.secho(
+            f"BOWS egress: {endpoint} ({scheme}) gateway={gateway_id} -> WriteProperty {target} "
+            "(Ctrl-C to stop)",
+            fg=typer.colors.GREEN,
+        )
+        try:
+            run_egress(config)
         except KeyboardInterrupt:  # pragma: no cover - interactive
             typer.echo("stopped")
 

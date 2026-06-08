@@ -44,6 +44,31 @@ def sample_pointlist() -> Path:
     return FIXTURES / "sample_pointlist.csv"
 
 
+class FakeBacnetApp:
+    """Records write_property calls; matches the bacpypes3 Application signature used by
+    the down-link executor (services.client.write_property). For grpc-free unit tests."""
+
+    def __init__(self, fail: Exception | None = None) -> None:
+        self.calls: list[tuple[object, ...]] = []
+        self._fail = fail
+
+    async def write_property(
+        self, target: str, objid: str, prop: str, value: object, priority: int | None = None
+    ) -> None:
+        self.calls.append((target, objid, prop, value, priority))
+        if self._fail is not None:
+            raise self._fail
+
+    def close(self) -> None:  # pragma: no cover - parity with the real client
+        pass
+
+
+@pytest.fixture
+def fake_bacnet_app() -> type[FakeBacnetApp]:
+    """Return the FakeBacnetApp class so tests can construct one (optionally failing)."""
+    return FakeBacnetApp
+
+
 def free_udp_port() -> int:
     """Pick a free UDP port for loopback BACnet tests."""
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:

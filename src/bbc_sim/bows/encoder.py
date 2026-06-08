@@ -29,6 +29,12 @@ _OBJECT_TYPE_INFO: dict[BacnetObjectType, tuple[str, int]] = {
     BacnetObjectType.multiStateValue: ("MultiStateValue", 19),
 }
 
+# ASHRAE 135 object-type enum -> BacnetObjectType. Reverse of _OBJECT_TYPE_INFO; the
+# canonical mapping for decoding down-link ControlCommands (ADR-017).
+ASHRAE_ENUM_TO_TYPE: dict[int, BacnetObjectType] = {
+    enum: obj_type for obj_type, (_base, enum) in _OBJECT_TYPE_INFO.items()
+}
+
 _BINARY_TRUTHY = {"active", "1", "true", "on"}
 
 

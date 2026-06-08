@@ -169,13 +169,19 @@ uv run bbc-sim run -c config/simulator.yaml --mode gateway --transport memory://
 BACnet ネイティブスキーマ `bacnet-device-message` で MQTT へ供給します（下流の独立コネクタ, ADR-014）。
 
 ```bash
-# 仮想 B-BC を読み、telemetry/{tenant}/{deviceId} へ bacnet-device-message を publish
+# 上り（テレメトリ）: 仮想 B-BC を読み、telemetry/{tenant}/{deviceId} へ publish
 uv run bbc-sim bows run -t 127.0.0.1:47808 -d bbc-local-001 --tenant default \
   --transport mqtt://127.0.0.1:1883 --interval 10
+
+# 下り（制御）: Building OS GatewayEgress(gRPC) を購読し ControlCommand を WriteProperty 実行
+uv sync --extra grpc          # gRPC は optional-extra（基本/ARM は非依存, ADR-017）
+uv run bbc-sim bows egress --endpoint buildingos:443 -g gw-001 -t 127.0.0.1:47808
 ```
 
 スキーマ準拠は [ADR-015](docs/adr/ADR-015-buildingos-bacnet-schema-mqtt-first.md) /
-`docs/specs/northbound-bows-buildingos.md`。AMQP/Hono と下り制御は将来（#48 / #49）。
+`docs/specs/northbound-bows-buildingos.md`。下り制御は Building OS の gRPC GatewayEgress を
+購読する双方向 stream クライアント（[ADR-017](docs/adr/ADR-017-bows-grpc-downlink-control.md),
+#67）。mTLS 証明書は環境変数 `BOWS_EGRESS_TLS_CA/CERT/KEY` から注入（既定なし）。AMQP/Hono は将来（#48）。
 
 ---
 

@@ -28,12 +28,13 @@ metadata:
 | ADR-013 | 南向きは Transport 抽象（subscribe/publish）。InMemory（CI 既定）＋ MQTT/ZeroMQ（integration）。値変換は mapping に集約 | EP-002 |
 | ADR-014 | BOWS = 仮想 B-BC の下流の独立 BACnet クライアント消費者。Building OS へ MQTT/AMQP 供給。B-BC の北=BACnet/南=binding（ADR-005）は不変 | EP-008 |
 | ADR-015 | Building OS 取り込みは BACnet ネイティブ schema `bacnet-device-message`、MQTT 先行・AMQP 後。Transport 抽象（ADR-013）再利用 | EP-008 |
+| ADR-017 | BOWS 下り制御は Building OS GatewayEgress(gRPC) 双方向 stream 購読→BACnet WriteProperty。grpc は optional-extra・遅延 import。ADR-016 §2 を置換 | EP-008 #67 |
 
 ## Pending Decisions
 
 - ~~南向きバインディングの内部モデル抽象~~ → 確定（[[ADR-013]]）。残: 各プロトコルの auth/TLS/QoS/retain、gRPC 具象 transport（EP-006）
 - **管理 UI（EP-007）の認証・外部公開**: MVP は localhost/LAN・認証なし（REST/UI とも `host=127.0.0.1`）。認証方式・外部公開・ロール（閲覧/操作）は将来 EPIC で決定。決定したら ADR 化
-- **BOWS**（EP-008 / `../specs/northbound-bows-buildingos.md`）: deviceId 決定規則 / TimeStamp の出所（B-BC vs コネクタ時計）/ COV vs poll 既定 / 配信保証(QoS/retain)・認証/TLS / AMQP・下り制御（PR-F-105,106）
+- **BOWS**（EP-008 / `../specs/northbound-bows-buildingos.md`）: deviceId 決定規則 / TimeStamp の出所（B-BC vs コネクタ時計）/ COV vs poll 既定 / 配信保証(QoS/retain)・認証/TLS / AMQP テレメトリ（PR-F-105）。下り制御は確定（[[ADR-017]]・#67、gRPC GatewayEgress）。残: GatewayEgress proto の上流確定差分の同期
 
 ### 下流設計書 v0.1 が surface した未決事項（❓）
 
