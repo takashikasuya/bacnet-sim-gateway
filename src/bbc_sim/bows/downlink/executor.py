@@ -25,6 +25,8 @@ def coerce_present_value(object_type: BacnetObjectType, value: float) -> float |
     if object_type.is_binary:
         return 1 if float(value) >= 0.5 else 0
     if object_type.is_multistate:
+        # State numbers arrive as whole doubles (1.0, 2.0); round() is half-to-even, which
+        # only matters on exact .5 boundaries that Building OS is not expected to send.
         return int(round(float(value)))
     return float(value)
 
@@ -34,13 +36,27 @@ def _valid_priority(priority: int | None) -> int | None:
 
 
 class CommandExecutor:
-    """Turn ControlCommands into WriteProperty calls against one target B-BC."""
+    """Turn ControlCommands into WriteProperty calls against one target B-BC.
 
-    def __init__(self, app: Any, target: str) -> None:
+    One egress stream fronts a single target B-BC (``target``). When ``expected_device``
+    is set, commands whose ``bacnet_device`` differs are rejected (fail-as-result) so a
+    misrouted command never writes to the wrong device; when None, the device id is not
+    enforced (single-target, best-effort).
+    """
+
+    def __init__(self, app: Any, target: str, *, expected_device: int | None = None) -> None:
         self._app = app
         self._target = target
+        self._expected_device = expected_device
 
     async def execute(self, cmd: ControlCommand) -> ControlResult:
+        if self._expected_device is not None and cmd.bacnet_device != self._expected_device:
+            return ControlResult(
+                cmd.control_id,
+                False,
+                f"command targets device {cmd.bacnet_device}; "
+                f"this connector serves device {self._expected_device}",
+            )
         object_type = ASHRAE_ENUM_TO_TYPE.get(cmd.object_type)
         if object_type is None:
             return ControlResult(cmd.control_id, False, f"unknown object_type {cmd.object_type}")

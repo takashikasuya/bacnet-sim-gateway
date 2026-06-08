@@ -38,14 +38,16 @@ class EgressConfig:
 
     ``endpoint`` is the Building OS GatewayEgress ``host:port``. ``gateway_id`` is the
     upstream gateway identifier announced in ``Hello`` — never the B-BC ``bbc_id``
-    (ADR-003). ``target`` is the B-BC address (host:port) to write to. mTLS material is
-    injected from the environment (``BOWS_EGRESS_TLS_CA/CERT/KEY``); no defaults.
+    (ADR-003). ``target`` is the B-BC address (host:port) to write to; ``device_instance``,
+    when set, is the device id that target hosts — commands for any other device are
+    rejected. mTLS material is injected from the environment
+    (``BOWS_EGRESS_TLS_CA/CERT/KEY``); no defaults.
     """
 
     endpoint: str
     gateway_id: str
     target: str
-    tenant: str = "default"
+    device_instance: int | None = None  # if set, enforce ControlCommand.bacnet_device
     local_address: str | None = None  # BACnet client bind addr; ephemeral if None
     tls: bool = True
     keepalive_s: float = 20.0

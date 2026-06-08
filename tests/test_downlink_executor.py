@@ -53,6 +53,25 @@ async def test_valid_priority_passed_through(fake_bacnet_app, priority: int) -> 
     assert app.calls[0][4] == priority
 
 
+async def test_mismatched_device_is_rejected_without_write(fake_bacnet_app) -> None:
+    app = fake_bacnet_app()
+    executor = CommandExecutor(app, "t", expected_device=1001)
+    # _cmd hard-codes bacnet_device=1001; build one for a different device.
+    cmd = ControlCommand("c1", "p1", 2002, 2, 1, 1.0)
+    res = await executor.execute(cmd)
+    assert res.success is False
+    assert "device 2002" in res.response and "device 1001" in res.response
+    assert app.calls == []  # never wrote to the wrong device
+
+
+async def test_matching_device_is_accepted(fake_bacnet_app) -> None:
+    app = fake_bacnet_app()
+    executor = CommandExecutor(app, "t", expected_device=1001)
+    res = await executor.execute(_cmd(2, 1, 1.0))  # bacnet_device=1001
+    assert res.success is True
+    assert len(app.calls) == 1
+
+
 async def test_unknown_object_type_fails_without_write(fake_bacnet_app) -> None:
     app = fake_bacnet_app()
     res = await CommandExecutor(app, "t").execute(_cmd(99, 1, 1.0))

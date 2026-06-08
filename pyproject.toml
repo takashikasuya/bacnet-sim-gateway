@@ -23,8 +23,10 @@ bbc-sim = "bbc_sim.cli:app"
 # (AGENTS.md §5); imported lazily so the base modules import without them. gRPC
 # (Building OS GatewayEgress down-link, ADR-017) pulls in grpcio/protobuf.
 #   uv sync --extra grpc   # down-link control (bbc-sim bows egress)
+# protobuf floor matches the committed stubs' gencode runtime check (generated with
+# protobuf 6.x); an older runtime fails ValidateProtobufRuntimeVersion at import.
 [project.optional-dependencies]
-grpc = ["grpcio>=1.60", "protobuf>=4.25"]
+grpc = ["grpcio>=1.60", "protobuf>=6.30"]
 
 # Single source of truth for dev tooling (PEP 735). Installed by `uv sync`
 # because `dev` is listed in [tool.uv].default-groups below (EP-009.1).

@@ -27,6 +27,6 @@ def test_egress_config_defaults() -> None:
     from bbc_sim.bows.downlink.models import EgressConfig
 
     cfg = EgressConfig(endpoint="bos:443", gateway_id="gw-1", target="10.0.0.5:47808")
-    assert cfg.tenant == "default"
     assert cfg.tls is True  # secure by default; --insecure opts out for loopback
+    assert cfg.device_instance is None  # device id not enforced unless set
     assert cfg.local_address is None

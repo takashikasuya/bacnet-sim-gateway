@@ -137,7 +137,7 @@ requires-dist = [
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.60" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "paho-mqtt", specifier = ">=2.0" },
-    { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=4.25" },
+    { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=6.30" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "pyzmq", specifier = ">=26.0" },
     { name = "typer", specifier = ">=0.12" },

@@ -51,7 +51,9 @@ def register(app: typer.Typer) -> None:
         endpoint: str = typer.Option(..., "--endpoint", help="Building OS GatewayEgress host:port"),
         gateway_id: str = typer.Option(..., "--gateway-id", "-g", help="upstream gateway id"),
         target: str = typer.Option(..., "--target", "-t", help="B-BC address host:port to write"),
-        tenant: str = typer.Option("default", "--tenant", help="Building OS tenant"),
+        device: int | None = typer.Option(
+            None, "--device", help="target B-BC device instance; rejects commands for others"
+        ),
         local: str | None = typer.Option(None, "--local", help="local BACnet bind host:port"),
         insecure: bool = typer.Option(False, "--insecure", help="disable mTLS (dev/loopback only)"),
     ) -> None:
@@ -63,7 +65,7 @@ def register(app: typer.Typer) -> None:
             endpoint=endpoint,
             gateway_id=gateway_id,
             target=target,
-            tenant=tenant,
+            device_instance=device,
             local_address=local,
             tls=not insecure,
         )

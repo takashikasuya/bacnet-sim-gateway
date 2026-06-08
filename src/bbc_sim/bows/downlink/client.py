@@ -21,6 +21,7 @@ from typing import Any
 from bbc_sim.bows.downlink.backoff import reconnect_delays
 from bbc_sim.bows.downlink.executor import CommandExecutor
 from bbc_sim.bows.downlink.models import ControlCommand, ControlResult, EgressConfig
+from bbc_sim.bows.downlink.pump import CommandPump
 from bbc_sim.services.client import build_client, ephemeral_local
 
 _log = logging.getLogger(__name__)
@@ -92,13 +93,21 @@ class GatewayEgressClient:
     def __init__(self, config: EgressConfig, *, executor: CommandExecutor | None = None) -> None:
         self.config = config
         self._executor = executor
+        self._pump: CommandPump | None = None
         self._app: Any = None
 
     def _ensure_executor(self) -> CommandExecutor:
         if self._executor is None:
             self._app = build_client(self.config.local_address or ephemeral_local())
-            self._executor = CommandExecutor(self._app, self.config.target)
+            self._executor = CommandExecutor(
+                self._app, self.config.target, expected_device=self.config.device_instance
+            )
         return self._executor
+
+    def _ensure_pump(self) -> CommandPump:
+        if self._pump is None:
+            self._pump = CommandPump(self._ensure_executor())
+        return self._pump
 
     def _channel_options(self) -> list[tuple[str, int]]:
         return [
@@ -108,8 +117,13 @@ class GatewayEgressClient:
         ]
 
     async def serve_stream(self, stub: Any, pb2: Any) -> None:
-        """Run one bidi stream: Hello, then command -> WriteProperty -> result."""
-        executor = self._ensure_executor()
+        """Run one bidi stream: Hello, then command -> WriteProperty -> result.
+
+        Outbound (Hello + results) and inbound (commands) share the same stream, so
+        results feed an ``outbox`` queue that the request generator drains after Hello.
+        The command->execute->result step runs through ``CommandPump`` (ADR-017 §3).
+        """
+        pump = self._ensure_pump()
         outbox: asyncio.Queue[Any] = asyncio.Queue()
 
         async def requests() -> Any:
@@ -121,11 +135,14 @@ class GatewayEgressClient:
                 yield item
 
         call = stub.Connect(requests())
-        try:
+
+        async def commands() -> Any:
             async for server_msg in call:
-                if server_msg.WhichOneof("payload") != "command":
-                    continue
-                result = await executor.execute(command_from_proto(server_msg.command))
+                if server_msg.WhichOneof("payload") == "command":
+                    yield command_from_proto(server_msg.command)
+
+        try:
+            async for result in pump.pump(commands()):
                 await outbox.put(result_to_proto(pb2, result))
         finally:
             await outbox.put(None)
