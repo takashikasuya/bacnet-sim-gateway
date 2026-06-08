@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from bbc_sim.bows.downlink.executor import CommandExecutor, coerce_present_value
@@ -70,6 +72,24 @@ async def test_matching_device_is_accepted(fake_bacnet_app) -> None:
     res = await executor.execute(_cmd(2, 1, 1.0))  # bacnet_device=1001
     assert res.success is True
     assert len(app.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "object_type,name", [(0, "analogInput"), (3, "binaryInput"), (13, "multiStateInput")]
+)
+async def test_input_objects_rejected_without_write(fake_bacnet_app, object_type, name) -> None:
+    app = fake_bacnet_app()
+    res = await CommandExecutor(app, "t").execute(_cmd(object_type, 1, 1.0))
+    assert res.success is False
+    assert "read-only" in res.response and name in res.response
+    assert app.calls == []  # Input objects are not writable; never attempted
+
+
+async def test_cancellation_is_not_swallowed(fake_bacnet_app) -> None:
+    # CancelledError (shutdown) must propagate, not become a ControlResult failure.
+    app = fake_bacnet_app(fail=asyncio.CancelledError())
+    with pytest.raises(asyncio.CancelledError):
+        await CommandExecutor(app, "t").execute(_cmd(2, 1, 1.0))
 
 
 async def test_unknown_object_type_fails_without_write(fake_bacnet_app) -> None:

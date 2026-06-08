@@ -9,6 +9,7 @@ the stream.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -18,6 +19,17 @@ from bbc_sim.models import BacnetObjectType
 from bbc_sim.services.client import write_property
 
 _log = logging.getLogger(__name__)
+
+# Input objects (AI/BI/MI) are sensor reads, not commandable; down-link control targets
+# writable Output/Value objects (ADR-017 "writable objects only"). Reject Input writes up
+# front with a clean ControlResult rather than relying on a BACnet writeAccessDenied.
+_READ_ONLY_INPUT_TYPES = frozenset(
+    {
+        BacnetObjectType.analogInput,
+        BacnetObjectType.binaryInput,
+        BacnetObjectType.multiStateInput,
+    }
+)
 
 
 def coerce_present_value(object_type: BacnetObjectType, value: float) -> float | int:
@@ -60,11 +72,17 @@ class CommandExecutor:
         object_type = ASHRAE_ENUM_TO_TYPE.get(cmd.object_type)
         if object_type is None:
             return ControlResult(cmd.control_id, False, f"unknown object_type {cmd.object_type}")
+        if object_type in _READ_ONLY_INPUT_TYPES:
+            return ControlResult(
+                cmd.control_id, False, f"{object_type.value} is read-only (Input); not writable"
+            )
         objid = f"{object_type.value},{cmd.instance_no}"
         value = coerce_present_value(object_type, cmd.present_value)
         priority = _valid_priority(cmd.priority)
         try:
             await write_property(self._app, self._target, objid, value, priority=priority)
+        except asyncio.CancelledError:
+            raise  # never turn shutdown/cancellation into a ControlResult failure
         except Exception as exc:  # noqa: BLE001 - report failure, keep the stream alive
             _log.warning("down-link WriteProperty %s=%r failed: %s", objid, value, exc)
             return ControlResult(cmd.control_id, False, f"{type(exc).__name__}: {exc}")

@@ -78,12 +78,31 @@ def _read_pem(path: str | None) -> bytes | None:
         return fh.read()
 
 
+_MTLS_HINT = (
+    "mTLS requires BOWS_EGRESS_TLS_CERT and BOWS_EGRESS_TLS_KEY (BOWS_EGRESS_TLS_CA optional); "
+    "set them, or pass --insecure for a dev/loopback endpoint"
+)
+
+
+def _mtls_pems() -> tuple[bytes | None, bytes, bytes]:
+    """Load (ca, cert, key) PEMs from env. Cert+key are required (no defaults, ADR-015 §4).
+
+    Without a client cert/key, ``ssl_channel_credentials`` would silently fall back to
+    server-only TLS against the system trust store — not the mutual auth the ADR expects.
+    Fail fast instead of downgrading silently.
+    """
+    cert = _read_pem(os.environ.get("BOWS_EGRESS_TLS_CERT"))
+    key = _read_pem(os.environ.get("BOWS_EGRESS_TLS_KEY"))
+    if cert is None or key is None:
+        raise RuntimeError(_MTLS_HINT)
+    return _read_pem(os.environ.get("BOWS_EGRESS_TLS_CA")), cert, key
+
+
 def _channel_credentials(grpc: Any) -> Any:
     """Build mTLS channel credentials from env-injected PEMs (no defaults, ADR-015 §4)."""
+    ca, cert, key = _mtls_pems()
     return grpc.ssl_channel_credentials(
-        root_certificates=_read_pem(os.environ.get("BOWS_EGRESS_TLS_CA")),
-        private_key=_read_pem(os.environ.get("BOWS_EGRESS_TLS_KEY")),
-        certificate_chain=_read_pem(os.environ.get("BOWS_EGRESS_TLS_CERT")),
+        root_certificates=ca, private_key=key, certificate_chain=cert
     )
 
 
@@ -165,13 +184,18 @@ class GatewayEgressClient:
     async def run_forever(self, stop: asyncio.Event | None = None) -> None:
         """Connect, serve, and reconnect with backoff+jitter until ``stop`` is set."""
         stop = stop or asyncio.Event()
-        self._ensure_executor()
+        if stop.is_set():
+            return  # short-circuit: don't bind a BACnet client we'll never use
+        # The BACnet client/executor is built lazily on first connect (serve_stream), so a
+        # stop set before the loop never allocates a UDP socket.
         delays = reconnect_delays(cap=self.config.max_backoff_s)
         try:
             while not stop.is_set():
                 try:
                     await self._connect_and_serve()
                     delays = reconnect_delays(cap=self.config.max_backoff_s)  # clean end: reset
+                except asyncio.CancelledError:
+                    raise  # shutdown: stop promptly, don't reconnect
                 except Exception:  # noqa: BLE001 - reconnect on any stream/transport failure
                     _log.exception("GatewayEgress stream failed; reconnecting")
                 if stop.is_set():

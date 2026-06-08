@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import asyncio
 
-from bbc_sim.bows.downlink.client import GatewayEgressClient
+import pytest
+
+from bbc_sim.bows.downlink.client import GatewayEgressClient, _mtls_pems
 from bbc_sim.bows.downlink.executor import CommandExecutor
 from bbc_sim.bows.downlink.models import EgressConfig
 
@@ -53,6 +55,46 @@ async def test_run_forever_does_not_connect_when_stopped_upfront(fake_bacnet_app
     await asyncio.wait_for(client.run_forever(stop), timeout=2)
 
     assert calls == []
+
+
+async def test_run_forever_builds_no_bacnet_client_when_stopped_upfront() -> None:
+    # No injected executor: a stop set before the loop must not bind a UDP socket.
+    config = EgressConfig(endpoint="bos:443", gateway_id="gw-1", target="t", tls=False)
+    client = GatewayEgressClient(config)
+    stop = asyncio.Event()
+    stop.set()
+    await asyncio.wait_for(client.run_forever(stop), timeout=2)
+    assert client._app is None  # never built a BACnet client
+
+
+async def test_run_forever_propagates_cancellation(fake_bacnet_app) -> None:
+    client = _client(fake_bacnet_app)
+    stop = asyncio.Event()
+
+    async def fake_connect() -> None:
+        raise asyncio.CancelledError()  # service shutdown mid-connect
+
+    client._connect_and_serve = fake_connect  # type: ignore[method-assign]
+    with pytest.raises(asyncio.CancelledError):
+        await client.run_forever(stop)
+
+
+def test_mtls_pems_requires_cert_and_key(monkeypatch) -> None:
+    for var in ("BOWS_EGRESS_TLS_CERT", "BOWS_EGRESS_TLS_KEY", "BOWS_EGRESS_TLS_CA"):
+        monkeypatch.delenv(var, raising=False)
+    with pytest.raises(RuntimeError, match="mTLS requires"):
+        _mtls_pems()
+
+
+def test_mtls_pems_loads_pems_when_set(monkeypatch, tmp_path) -> None:
+    cert, key = tmp_path / "cert.pem", tmp_path / "key.pem"
+    cert.write_bytes(b"CERT")
+    key.write_bytes(b"KEY")
+    monkeypatch.setenv("BOWS_EGRESS_TLS_CERT", str(cert))
+    monkeypatch.setenv("BOWS_EGRESS_TLS_KEY", str(key))
+    monkeypatch.delenv("BOWS_EGRESS_TLS_CA", raising=False)
+    ca, cert_pem, key_pem = _mtls_pems()
+    assert ca is None and cert_pem == b"CERT" and key_pem == b"KEY"  # CA optional
 
 
 async def test_run_forever_closes_bacnet_client_on_exit(fake_bacnet_app) -> None:

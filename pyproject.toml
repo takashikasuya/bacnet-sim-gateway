@@ -23,10 +23,11 @@ bbc-sim = "bbc_sim.cli:app"
 # (AGENTS.md §5); imported lazily so the base modules import without them. gRPC
 # (Building OS GatewayEgress down-link, ADR-017) pulls in grpcio/protobuf.
 #   uv sync --extra grpc   # down-link control (bbc-sim bows egress)
-# protobuf floor matches the committed stubs' gencode runtime check (generated with
-# protobuf 6.x); an older runtime fails ValidateProtobufRuntimeVersion at import.
+# Floors match the committed stubs' import-time runtime checks: gateway_egress_pb2_grpc.py
+# requires grpcio>=1.81.0 and gateway_egress_pb2.py validates protobuf>=6.33.5. Lower
+# floors would let `--extra grpc` resolve a runtime that crashes on import.
 [project.optional-dependencies]
-grpc = ["grpcio>=1.60", "protobuf>=6.30"]
+grpc = ["grpcio>=1.81.0", "protobuf>=6.33.5"]
 
 # Single source of truth for dev tooling (PEP 735). Installed by `uv sync`
 # because `dev` is listed in [tool.uv].default-groups below (EP-009.1).
@@ -40,8 +41,8 @@ dev = [
     "types-PyYAML>=6.0",
     "httpx>=0.27",
     "jsonschema>=4.0",
-    "grpcio>=1.60",  # down-link integration tests (tests/test_downlink_grpc_loopback.py)
-    "grpcio-tools>=1.60",  # regenerate proto stubs (scripts/gen_proto.sh)
+    "grpcio>=1.81.0",  # down-link integration tests; matches committed stubs (>=1.81.0)
+    "grpcio-tools>=1.81.0",  # regenerate proto stubs (scripts/gen_proto.sh)
 ]
 
 # Make `uv sync` (no flags) install the dev group explicitly, so lint/type/test

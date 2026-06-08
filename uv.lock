@@ -134,10 +134,10 @@ dev = [
 requires-dist = [
     { name = "bacpypes3", specifier = ">=0.0.98" },
     { name = "fastapi", specifier = ">=0.110" },
-    { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.60" },
+    { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.81.0" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "paho-mqtt", specifier = ">=2.0" },
-    { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=6.30" },
+    { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=6.33.5" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "pyzmq", specifier = ">=26.0" },
     { name = "typer", specifier = ">=0.12" },
@@ -147,8 +147,8 @@ provides-extras = ["grpc"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "grpcio", specifier = ">=1.60" },
-    { name = "grpcio-tools", specifier = ">=1.60" },
+    { name = "grpcio", specifier = ">=1.81.0" },
+    { name = "grpcio-tools", specifier = ">=1.81.0" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jsonschema", specifier = ">=4.0" },
     { name = "mypy", specifier = ">=1.10" },
