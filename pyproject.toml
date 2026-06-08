@@ -20,13 +20,16 @@ dependencies = [
 bbc-sim = "bbc_sim.cli:app"
 
 # Optional transports, kept out of the base install so CI / ARM stay minimal
-# (AGENTS.md §5); imported lazily so the base modules import without them. gRPC
-# (Building OS GatewayEgress down-link, ADR-017) pulls in grpcio/protobuf.
+# (AGENTS.md §5); imported lazily so the base modules import without them. AMQP 1.0
+# (Hono telemetry, ADR-016) pulls in native qpid-proton; gRPC (Building OS GatewayEgress
+# down-link, ADR-017) pulls in grpcio/protobuf.
+#   uv sync --extra amqp   # northbound AMQP/Hono telemetry
 #   uv sync --extra grpc   # down-link control (bbc-sim bows egress)
-# Floors match the committed stubs' import-time runtime checks: gateway_egress_pb2_grpc.py
-# requires grpcio>=1.81.0 and gateway_egress_pb2.py validates protobuf>=6.33.5. Lower
+# grpc floors match the committed stubs' import-time checks: gateway_egress_pb2_grpc.py
+# requires grpcio>=1.81.0 and gateway_egress_pb2.py validates protobuf>=6.33.5; lower
 # floors would let `--extra grpc` resolve a runtime that crashes on import.
 [project.optional-dependencies]
+amqp = ["python-qpid-proton>=0.39"]
 grpc = ["grpcio>=1.81.0", "protobuf>=6.33.5"]
 
 # Single source of truth for dev tooling (PEP 735). Installed by `uv sync`

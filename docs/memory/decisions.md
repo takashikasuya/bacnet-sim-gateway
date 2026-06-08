@@ -28,6 +28,7 @@ metadata:
 | ADR-013 | 南向きは Transport 抽象（subscribe/publish）。InMemory（CI 既定）＋ MQTT/ZeroMQ（integration）。値変換は mapping に集約 | EP-002 |
 | ADR-014 | BOWS = 仮想 B-BC の下流の独立 BACnet クライアント消費者。Building OS へ MQTT/AMQP 供給。B-BC の北=BACnet/南=binding（ADR-005）は不変 | EP-008 |
 | ADR-015 | Building OS 取り込みは BACnet ネイティブ schema `bacnet-device-message`、MQTT 先行・AMQP 後。Transport 抽象（ADR-013）再利用 | EP-008 |
+| ADR-016 | BOWS の AMQP 1.0(Hono) telemetry は optional-extra・遅延 import。下り制御の旧案（§2）は ADR-017 が置換 | EP-008 #48 |
 | ADR-017 | BOWS 下り制御は Building OS GatewayEgress(gRPC) 双方向 stream 購読→BACnet WriteProperty。grpc は optional-extra・遅延 import。ADR-016 §2 を置換 | EP-008 #67 |
 
 ## Pending Decisions

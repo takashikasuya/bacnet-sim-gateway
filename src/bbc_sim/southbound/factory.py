@@ -3,6 +3,7 @@
 - ``memory``                          -> InMemoryTransport (self-contained, default)
 - ``mqtt://host:port``                -> MqttTransport
 - ``zmq://sub_endpoint|pub_endpoint`` -> ZmqTransport
+- ``amqp[s]://host:port``             -> AmqpTransport (Hono northbound; extra `amqp`)
 """
 
 from __future__ import annotations
@@ -27,4 +28,11 @@ def make_transport(uri: str) -> Transport:
         body = uri[len("zmq://") :]
         sub, _, pub = body.partition("|")
         return ZmqTransport(sub, pub or sub)
+    if parsed.scheme in ("amqp", "amqps"):
+        from bbc_sim.southbound.amqp import AmqpTransport
+
+        tls = parsed.scheme == "amqps"
+        return AmqpTransport(
+            parsed.hostname or "127.0.0.1", parsed.port or (5671 if tls else 5672), tls=tls
+        )
     raise ValueError(f"unsupported transport uri: {uri!r}")
