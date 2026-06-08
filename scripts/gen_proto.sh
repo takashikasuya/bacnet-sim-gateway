@@ -18,7 +18,10 @@ uv run --extra grpc python -m grpc_tools.protoc \
 
 # protoc emits a top-level `import gateway_egress_pb2`; rewrite it to a package-
 # relative import so the stubs work when imported as bbc_sim.bows.downlink.*.
-sed -i 's/^import gateway_egress_pb2/from . import gateway_egress_pb2/' \
+# Use a backup suffix so the in-place edit is portable across GNU and BSD/macOS
+# sed, then drop the backup.
+sed -i.bak 's/^import gateway_egress_pb2/from . import gateway_egress_pb2/' \
   "$OUT/gateway_egress_pb2_grpc.py"
+rm -f "$OUT/gateway_egress_pb2_grpc.py.bak"
 
 echo "generated: $OUT/gateway_egress_pb2.py, $OUT/gateway_egress_pb2_grpc.py"
