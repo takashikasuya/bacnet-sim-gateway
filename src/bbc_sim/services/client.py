@@ -103,9 +103,15 @@ async def read_present_values(app: Application, target: str, objids: list[str]) 
 
 
 async def write_property(
-    app: Application, target: str, objid: str, value: Any, prop: str = "present-value"
+    app: Application,
+    target: str,
+    objid: str,
+    value: Any,
+    prop: str = "present-value",
+    priority: int | None = None,
 ) -> None:
-    await app.write_property(target, objid, prop, value)
+    """WriteProperty. ``priority`` (1..16) targets the BACnet priority array; None = unset."""
+    await app.write_property(target, objid, prop, value, priority=priority)
 
 
 async def write_property_multiple(

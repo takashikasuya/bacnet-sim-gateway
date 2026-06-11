@@ -1,0 +1,58 @@
+// GatewayEgress — Building OS 下り制御（gRPC 双方向 stream）の対向契約（ADR-017, #67）。
+//
+// 正の契約は Building OS `gutp-building-os-oss`（`docs/oss-egress-gateway-bridge-plan.md`）。
+// 本ファイルは bbc-sim / BOWS 側の対向定義であり、確定差分は上流と同期する（🔧）。
+//
+// 再生成: scripts/gen_proto.sh（`uv run --extra grpc python -m grpc_tools.protoc ...`）。
+
+syntax = "proto3";
+
+package bbc_sim.gateway_egress.v1;
+
+// 上流（Building OS）に配置される gRPC IF。ゲートウェイ（建物エッジ）は
+// クラスタ外クライアントとして 1 本の双方向 stream を張る。
+service GatewayEgress {
+  // ゲートウェイごと 1 本の双方向 stream。クライアントは ClientMessage(Hello) で開始し、
+  // 以後サーバが ControlCommand を push、クライアントが ControlResult を返す。
+  rpc Connect(stream ClientMessage) returns (stream ServerMessage);
+}
+
+// クライアント → サーバ（ゲートウェイ → Building OS）。
+message ClientMessage {
+  oneof payload {
+    Hello hello = 1;          // stream 確立時の最初の 1 通
+    ControlResult result = 2; // コマンド実行結果
+  }
+}
+
+// サーバ → クライアント（Building OS → ゲートウェイ）。
+message ServerMessage {
+  oneof payload {
+    ControlCommand command = 1;
+  }
+}
+
+// stream を識別するゲートウェイ宣言。gateway_id は上流ゲートウェイ識別子であり
+// B-BC の bbc_id ではない（ADR-003）。
+message Hello {
+  string gateway_id = 1;
+}
+
+// 下り制御コマンド。point_id は Building OS が OxiGraph で解決した安定 id。
+// 実行側は (object_type, instance_no) から BACnet objid を組み立て present-value を書く。
+message ControlCommand {
+  string control_id = 1;     // 結果の相関キー
+  string point_id = 2;       // Building OS 解決済み point id（監査/ログ用）
+  uint32 bacnet_device = 3;  // 対象 B-BC の device instance
+  uint32 object_type = 4;    // ASHRAE 135 object-type enum（0=AI..19=MV）
+  uint32 instance_no = 5;    // object instance
+  double present_value = 6;  // 書込値（binary は >=0.5 を active として 0/1 化）
+  uint32 priority = 7;       // BACnet 書込優先度 1..16（0 = 指定なし）
+}
+
+// 実行結果。Building OS の WaitForResult まで通知される。
+message ControlResult {
+  string control_id = 1;
+  bool success = 2;
+  string response = 3; // 失敗理由 / 補足
+}
