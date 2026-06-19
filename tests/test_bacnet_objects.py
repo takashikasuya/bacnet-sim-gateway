@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
 from bbc_sim.bacnet_objects.builder import build_device, build_object, build_object_list
+from bbc_sim.models import BacnetObjectSpec, BacnetObjectType
 from bbc_sim.yaml_generator.generator import generate_config
 from bbc_sim.yaml_generator.pointlist import read_point_list
 
@@ -66,3 +69,32 @@ def test_object_instance_preserved(sample_pointlist):
     obj = build_object(pt001)
     assert str(obj.objectIdentifier[0]) == "analog-input"
     assert obj.objectIdentifier[1] == 1001
+
+
+@pytest.mark.parametrize(
+    "object_type,states",
+    [
+        (BacnetObjectType.multiStateInput, ["Low", "High"]),
+        (BacnetObjectType.multiStateOutput, ["Off", "On", "Auto"]),
+        (BacnetObjectType.multiStateValue, ["A", "B"]),
+    ],
+)
+def test_multistate_objects_use_generic_cov_criteria(object_type, states):
+    """MultiState objects must use GenericCriteria, not COVIncrementCriteria (#75).
+
+    COVIncrementCriteria accesses .covIncrement which MultiState objects don't have;
+    bacpypes3 returns operational-problem when a COV subscription is requested.
+    """
+    from bacpypes3.local.cov import GenericCriteria
+
+    spec = BacnetObjectSpec(
+        point_id="TEST-MS",
+        object_type=object_type,
+        object_instance=1,
+        object_name="Test MS",
+        state_text=states,
+    )
+    obj = build_object(spec)
+    assert obj._cov_criteria is GenericCriteria, (
+        f"{object_type.value} must use GenericCriteria for COV subscriptions"
+    )
