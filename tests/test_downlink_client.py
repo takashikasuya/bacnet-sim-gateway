@@ -14,11 +14,14 @@ import pytest
 from bbc_sim.bows.downlink.client import GatewayEgressClient, _mtls_pems
 from bbc_sim.bows.downlink.executor import CommandExecutor
 from bbc_sim.bows.downlink.models import EgressConfig
+from bbc_sim.bows.point_registry import PointRegistry
 
 
 def _client(fake_bacnet_app) -> GatewayEgressClient:
     config = EgressConfig(endpoint="bos:443", gateway_id="gw-1", target="t", tls=False)
-    return GatewayEgressClient(config, executor=CommandExecutor(fake_bacnet_app(), "t"))
+    return GatewayEgressClient(
+        config, executor=CommandExecutor(fake_bacnet_app(), "t", point_registry=PointRegistry([]))
+    )
 
 
 async def test_run_forever_reconnects_then_stops(monkeypatch, fake_bacnet_app) -> None:

@@ -48,13 +48,14 @@ def _import_stubs() -> tuple[Any, Any]:
 
 
 def command_from_proto(msg: Any) -> ControlCommand:
-    """Adapt a proto ``ControlCommand`` to the gRPC-free dataclass."""
+    """Adapt a proto ``ControlCommand`` to the gRPC-free dataclass (#74).
+
+    Fields 3-5 (bacnet_device / object_type / instance_no) are reserved in the
+    proto schema and ignored here; point_id is the sole target identifier.
+    """
     return ControlCommand(
         control_id=msg.control_id,
         point_id=msg.point_id,
-        bacnet_device=msg.bacnet_device,
-        object_type=msg.object_type,
-        instance_no=msg.instance_no,
         present_value=msg.present_value,
         priority=msg.priority or None,  # proto uint32 0 -> unset
     )
@@ -119,7 +120,7 @@ class GatewayEgressClient:
         if self._executor is None:
             self._app = build_client(self.config.local_address or ephemeral_local())
             self._executor = CommandExecutor(
-                self._app, self.config.target, expected_device=self.config.device_instance
+                self._app, self.config.target, point_registry=self.config.point_registry
             )
         return self._executor
 

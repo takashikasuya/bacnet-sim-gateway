@@ -1,9 +1,8 @@
-"""EP-008.12 (#71) — GatewayEgress gRPC loopback (real grpc.aio, integration).
+"""EP-008.12 (#71, #74) — GatewayEgress gRPC loopback (real grpc.aio, integration).
 
 Spins an in-process GatewayEgress server, runs the real client against it, and asserts
-the full Hello -> ControlCommand -> WriteProperty -> ControlResult round-trip. Mirrors
-the contract Building OS exercises in `gutp-building-os-oss#163`. Marked integration so
-the default suite stays grpc-free; run with `uv run --extra grpc pytest -m integration`.
+the full Hello -> ControlCommand -> WriteProperty -> ControlResult round-trip with the
+new point_id-only contract (#74). Marked integration so the default suite stays grpc-free.
 """
 
 from __future__ import annotations
@@ -24,8 +23,16 @@ from bbc_sim.bows.downlink.client import (  # noqa: E402
 )
 from bbc_sim.bows.downlink.executor import CommandExecutor  # noqa: E402
 from bbc_sim.bows.downlink.models import ControlResult, EgressConfig  # noqa: E402
+from bbc_sim.bows.point_registry import PointRegistry  # noqa: E402
+from bbc_sim.models import BacnetObjectSpec, BacnetObjectType  # noqa: E402
 
 pytestmark = pytest.mark.integration
+
+
+def _spec(point_id: str, object_type: BacnetObjectType, instance: int) -> BacnetObjectSpec:
+    return BacnetObjectSpec(
+        point_id=point_id, object_type=object_type, object_instance=instance, object_name=point_id
+    )
 
 
 class _Servicer(pb2_grpc.GatewayEgressServicer):
@@ -47,12 +54,10 @@ class _Servicer(pb2_grpc.GatewayEgressServicer):
 
 
 async def test_loopback_command_writes_property_and_returns_result(fake_bacnet_app) -> None:
+    registry = PointRegistry([_spec("p1", BacnetObjectType.analogValue, 7)])
     command = pb2.ControlCommand(
         control_id="c1",
         point_id="p1",
-        bacnet_device=1001,
-        object_type=2,
-        instance_no=7,
         present_value=21.5,
         priority=10,
     )
@@ -64,9 +69,15 @@ async def test_loopback_command_writes_property_and_returns_result(fake_bacnet_a
 
     app = fake_bacnet_app()
     config = EgressConfig(
-        endpoint=f"127.0.0.1:{port}", gateway_id="gw-1", target="bbc:47808", tls=False
+        endpoint=f"127.0.0.1:{port}",
+        gateway_id="gw-1",
+        target="bbc:47808",
+        point_registry=registry,
+        tls=False,
     )
-    client = GatewayEgressClient(config, executor=CommandExecutor(app, "bbc:47808"))
+    client = GatewayEgressClient(
+        config, executor=CommandExecutor(app, "bbc:47808", point_registry=registry)
+    )
     try:
         await asyncio.wait_for(client._connect_and_serve(), timeout=10)
     finally:
@@ -82,14 +93,12 @@ def test_proto_adapters_round_trip() -> None:
     proto_cmd = pb2.ControlCommand(
         control_id="c9",
         point_id="p9",
-        bacnet_device=5,
-        object_type=5,
-        instance_no=2,
         present_value=1.0,
         priority=0,
     )
     cmd = command_from_proto(proto_cmd)
-    assert cmd.object_type == 5 and cmd.instance_no == 2
+    assert cmd.point_id == "p9"
+    assert cmd.present_value == 1.0
     assert cmd.priority is None  # proto 0 -> unset
 
     client_msg = result_to_proto(pb2, ControlResult("c9", True, "ok"))

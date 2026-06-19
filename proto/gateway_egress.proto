@@ -38,14 +38,13 @@ message Hello {
   string gateway_id = 1;
 }
 
-// 下り制御コマンド。point_id は Building OS が OxiGraph で解決した安定 id。
-// 実行側は (object_type, instance_no) から BACnet objid を組み立て present-value を書く。
+// 下り制御コマンド（#74 新契約）。
+// GW が共有 point list で point_id -> BACnet device/object/instance にローカル解決する。
+// 旧 bacnet_device(3) / object_type(4) / instance_no(5) フィールドを撤去し reserved 化。
 message ControlCommand {
   string control_id = 1;     // 結果の相関キー
-  string point_id = 2;       // Building OS 解決済み point id（監査/ログ用）
-  uint32 bacnet_device = 3;  // 対象 B-BC の device instance
-  uint32 object_type = 4;    // ASHRAE 135 object-type enum（0=AI..19=MV）
-  uint32 instance_no = 5;    // object instance
+  string point_id = 2;       // 共有 point list の正本識別子（GW がローカル解決）
+  reserved 3, 4, 5;          // 旧 bacnet_device / object_type / instance_no（撤去済み）
   double present_value = 6;  // 書込値（binary は >=0.5 を active として 0/1 化）
   uint32 priority = 7;       // BACnet 書込優先度 1..16（0 = 指定なし）
 }
