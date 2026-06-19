@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
-# Regenerate gRPC stubs for the GatewayEgress down-link contract (ADR-017, #67).
+# Regenerate gRPC stubs for GatewayEgress (down-link) and GatewayIngress (up-link).
 #
-# Stubs are committed under src/bbc_sim/bows/downlink/ so `uv sync --extra grpc`
-# users can run `bbc-sim bows egress` without codegen. grpcio-tools lives in the
-# dev group; the optional `grpc` extra provides the runtime grpcio/protobuf.
+# Stubs are committed so `uv sync --extra grpc` users can run connectors without codegen.
+# grpcio-tools lives in the dev group; the optional `grpc` extra provides the runtime.
 #
 # Usage: ./scripts/gen_proto.sh   (run from repo root)
 set -euo pipefail
 
-OUT="src/bbc_sim/bows/downlink"
+EGRESS_OUT="src/bbc_sim/bows/downlink"
+INGRESS_OUT="src/bbc_sim/bows/uplink"
 
+# --- egress ---
 uv run --extra grpc python -m grpc_tools.protoc \
   -I proto \
-  --python_out="$OUT" \
-  --grpc_python_out="$OUT" \
+  --python_out="$EGRESS_OUT" \
+  --grpc_python_out="$EGRESS_OUT" \
   proto/gateway_egress.proto
 
-# protoc emits a top-level `import gateway_egress_pb2`; rewrite it to a package-
-# relative import so the stubs work when imported as bbc_sim.bows.downlink.*.
-# Use a backup suffix so the in-place edit is portable across GNU and BSD/macOS
-# sed, then drop the backup.
 sed -i.bak 's/^import gateway_egress_pb2/from . import gateway_egress_pb2/' \
-  "$OUT/gateway_egress_pb2_grpc.py"
-rm -f "$OUT/gateway_egress_pb2_grpc.py.bak"
+  "$EGRESS_OUT/gateway_egress_pb2_grpc.py"
+rm -f "$EGRESS_OUT/gateway_egress_pb2_grpc.py.bak"
 
-echo "generated: $OUT/gateway_egress_pb2.py, $OUT/gateway_egress_pb2_grpc.py"
+# --- ingress ---
+uv run --extra grpc python -m grpc_tools.protoc \
+  -I proto \
+  --python_out="$INGRESS_OUT" \
+  --grpc_python_out="$INGRESS_OUT" \
+  proto/gateway_ingress.proto
+
+sed -i.bak 's/^import gateway_ingress_pb2/from . import gateway_ingress_pb2/' \
+  "$INGRESS_OUT/gateway_ingress_pb2_grpc.py"
+rm -f "$INGRESS_OUT/gateway_ingress_pb2_grpc.py.bak"
+
+echo "generated:"
+echo "  $EGRESS_OUT/gateway_egress_pb2.py, $EGRESS_OUT/gateway_egress_pb2_grpc.py"
+echo "  $INGRESS_OUT/gateway_ingress_pb2.py, $INGRESS_OUT/gateway_ingress_pb2_grpc.py"

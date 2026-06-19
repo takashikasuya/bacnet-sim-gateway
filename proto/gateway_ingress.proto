@@ -1,0 +1,30 @@
+// GatewayIngress — Building OS 上り テレメトリ（gRPC client-streaming）対向契約（#73）。
+//
+// 正の契約は Building OS `gutp-building-os-oss` proto/gateway_ingress.proto（PR #184）。
+// package gatewaybridge はワイヤパス互換のため不変。
+//
+// 再生成: scripts/gen_proto.sh
+
+syntax = "proto3";
+
+package gatewaybridge;
+
+// GW 側からクラスタ内 Building OS へ上りテレメトリを stream する。
+service GatewayIngress {
+  // GW が TelemetryFrame を client-streaming で送り、サーバが StreamAck を返す。
+  rpc StreamTelemetry(stream TelemetryFrame) returns (StreamAck);
+}
+
+// テレメトリフレーム。gateway_id + point_id で Building OS の digital twin に照合する。
+message TelemetryFrame {
+  string gateway_id = 1;             // ルーティング/プロベナンス（全体で一意）
+  string point_id   = 2;             // 共有 point list の正本識別子
+  double value      = 3;             // テレメトリ値（boolean は 0/1 に正規化）
+  string timestamp  = 4;             // RFC3339; 空ならサーバが受信時刻を付与
+  map<string,string> attributes = 5; // 任意の付帯情報（毎回は不要）
+}
+
+// サーバ応答。accepted は成功した TelemetryFrame の累積カウント。
+message StreamAck {
+  int64 accepted = 1;
+}
