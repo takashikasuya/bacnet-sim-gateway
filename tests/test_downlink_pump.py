@@ -7,6 +7,19 @@ from collections.abc import AsyncIterator
 from bbc_sim.bows.downlink.executor import CommandExecutor
 from bbc_sim.bows.downlink.models import ControlCommand
 from bbc_sim.bows.downlink.pump import CommandPump
+from bbc_sim.bows.point_registry import PointRegistry
+from bbc_sim.models import BacnetObjectSpec, BacnetObjectType
+
+
+def _spec(point_id: str, object_type: BacnetObjectType, instance: int) -> BacnetObjectSpec:
+    return BacnetObjectSpec(
+        point_id=point_id, object_type=object_type, object_instance=instance, object_name=point_id
+    )
+
+
+_REGISTRY = PointRegistry(
+    [_spec(f"p{i}", BacnetObjectType.analogValue, i) for i in range(3)]
+)
 
 
 async def _stream(cmds: list[ControlCommand]) -> AsyncIterator[ControlCommand]:
@@ -16,8 +29,8 @@ async def _stream(cmds: list[ControlCommand]) -> AsyncIterator[ControlCommand]:
 
 async def test_pump_executes_each_command_in_order(fake_bacnet_app) -> None:
     app = fake_bacnet_app()
-    pump = CommandPump(CommandExecutor(app, "t"))
-    cmds = [ControlCommand(f"c{i}", "p", 1001, 2, i, float(i)) for i in range(3)]
+    pump = CommandPump(CommandExecutor(app, "t", point_registry=_REGISTRY))
+    cmds = [ControlCommand(f"c{i}", f"p{i}", float(i)) for i in range(3)]
 
     results = [r async for r in pump.pump(_stream(cmds))]
 
@@ -28,8 +41,8 @@ async def test_pump_executes_each_command_in_order(fake_bacnet_app) -> None:
 
 async def test_pump_reports_failures_without_stopping(fake_bacnet_app) -> None:
     app = fake_bacnet_app(fail=RuntimeError("boom"))
-    pump = CommandPump(CommandExecutor(app, "t"))
-    cmds = [ControlCommand("a", "p", 1, 2, 1, 1.0), ControlCommand("b", "p", 1, 2, 2, 2.0)]
+    pump = CommandPump(CommandExecutor(app, "t", point_registry=_REGISTRY))
+    cmds = [ControlCommand("a", "p0", 1.0), ControlCommand("b", "p1", 2.0)]
 
     results = [r async for r in pump.pump(_stream(cmds))]
 

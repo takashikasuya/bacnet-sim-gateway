@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14gateway_egress.proto\x12\x19\x62\x62\x63_sim.gateway_egress.v1\"\x89\x01\n\rClientMessage\x12\x31\n\x05hello\x18\x01 \x01(\x0b\x32 .bbc_sim.gateway_egress.v1.HelloH\x00\x12:\n\x06result\x18\x02 \x01(\x0b\x32(.bbc_sim.gateway_egress.v1.ControlResultH\x00\x42\t\n\x07payload\"X\n\rServerMessage\x12<\n\x07\x63ommand\x18\x01 \x01(\x0b\x32).bbc_sim.gateway_egress.v1.ControlCommandH\x00\x42\t\n\x07payload\"\x1b\n\x05Hello\x12\x12\n\ngateway_id\x18\x01 \x01(\t\"\xa0\x01\n\x0e\x43ontrolCommand\x12\x12\n\ncontrol_id\x18\x01 \x01(\t\x12\x10\n\x08point_id\x18\x02 \x01(\t\x12\x15\n\rbacnet_device\x18\x03 \x01(\r\x12\x13\n\x0bobject_type\x18\x04 \x01(\r\x12\x13\n\x0binstance_no\x18\x05 \x01(\r\x12\x15\n\rpresent_value\x18\x06 \x01(\x01\x12\x10\n\x08priority\x18\x07 \x01(\r\"F\n\rControlResult\x12\x12\n\ncontrol_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x10\n\x08response\x18\x03 \x01(\t2r\n\rGatewayEgress\x12\x61\n\x07\x43onnect\x12(.bbc_sim.gateway_egress.v1.ClientMessage\x1a(.bbc_sim.gateway_egress.v1.ServerMessage(\x01\x30\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14gateway_egress.proto\x12\x19\x62\x62\x63_sim.gateway_egress.v1\"\x89\x01\n\rClientMessage\x12\x31\n\x05hello\x18\x01 \x01(\x0b\x32 .bbc_sim.gateway_egress.v1.HelloH\x00\x12:\n\x06result\x18\x02 \x01(\x0b\x32(.bbc_sim.gateway_egress.v1.ControlResultH\x00\x42\t\n\x07payload\"X\n\rServerMessage\x12<\n\x07\x63ommand\x18\x01 \x01(\x0b\x32).bbc_sim.gateway_egress.v1.ControlCommandH\x00\x42\t\n\x07payload\"\x1b\n\x05Hello\x12\x12\n\ngateway_id\x18\x01 \x01(\t\"q\n\x0e\x43ontrolCommand\x12\x12\n\ncontrol_id\x18\x01 \x01(\t\x12\x10\n\x08point_id\x18\x02 \x01(\t\x12\x15\n\rpresent_value\x18\x06 \x01(\x01\x12\x10\n\x08priority\x18\x07 \x01(\rJ\x04\x08\x03\x10\x04J\x04\x08\x04\x10\x05J\x04\x08\x05\x10\x06\"F\n\rControlResult\x12\x12\n\ncontrol_id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x10\n\x08response\x18\x03 \x01(\t2r\n\rGatewayEgress\x12\x61\n\x07\x43onnect\x12(.bbc_sim.gateway_egress.v1.ClientMessage\x1a(.bbc_sim.gateway_egress.v1.ServerMessage(\x01\x30\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,10 +37,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SERVERMESSAGE']._serialized_end=279
   _globals['_HELLO']._serialized_start=281
   _globals['_HELLO']._serialized_end=308
-  _globals['_CONTROLCOMMAND']._serialized_start=311
-  _globals['_CONTROLCOMMAND']._serialized_end=471
-  _globals['_CONTROLRESULT']._serialized_start=473
-  _globals['_CONTROLRESULT']._serialized_end=543
-  _globals['_GATEWAYEGRESS']._serialized_start=545
-  _globals['_GATEWAYEGRESS']._serialized_end=659
+  _globals['_CONTROLCOMMAND']._serialized_start=310
+  _globals['_CONTROLCOMMAND']._serialized_end=423
+  _globals['_CONTROLRESULT']._serialized_start=425
+  _globals['_CONTROLRESULT']._serialized_end=495
+  _globals['_GATEWAYEGRESS']._serialized_start=497
+  _globals['_GATEWAYEGRESS']._serialized_end=611
 # @@protoc_insertion_point(module_scope)
