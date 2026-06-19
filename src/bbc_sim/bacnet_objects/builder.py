@@ -19,12 +19,25 @@ from bacpypes3.local.binary import (
     BinaryOutputObject,
     BinaryValueObject,
 )
+from bacpypes3.local.cov import GenericCriteria
 from bacpypes3.local.device import DeviceObject
 from bacpypes3.local.multistate import (
-    MultiStateInputObject,
-    MultiStateOutputObject,
-    MultiStateValueObject,
+    MultiStateInputObject as _MultiStateInputObject,
+    MultiStateOutputObject as _MultiStateOutputObject,
+    MultiStateValueObject as _MultiStateValueObject,
 )
+
+
+class MultiStateInputObject(_MultiStateInputObject):
+    _cov_criteria = GenericCriteria
+
+
+class MultiStateOutputObject(_MultiStateOutputObject):
+    _cov_criteria = GenericCriteria
+
+
+class MultiStateValueObject(_MultiStateValueObject):
+    _cov_criteria = GenericCriteria
 from bacpypes3.local.networkport import NetworkPortObject
 from bacpypes3.object import Object
 from bacpypes3.primitivedata import ObjectIdentifier
