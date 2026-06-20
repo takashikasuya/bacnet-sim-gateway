@@ -102,7 +102,13 @@ def generate_config(
     instances, instance_warnings = _assign_instances(pairs)
     warnings.extend(instance_warnings)
 
+    # Pre-compute which point_names are duplicated within this device so we can
+    # disambiguate objectName (BACnet requires uniqueness within a Device).
+    from collections import Counter as _Counter
+    _name_counts = _Counter(p.point_name for p, _ in pairs)
+
     objects: list[BacnetObjectSpec] = []
+    _name_seen: _Counter = _Counter()
     for p, ot in pairs:
         units = None
         if ot.is_analog:
@@ -132,7 +138,11 @@ def generate_config(
                 point_id=p.point_id,
                 object_type=ot,
                 object_instance=instances[p.point_id],
-                object_name=p.point_name,
+                object_name=(
+                    p.point_name
+                    if _name_counts[p.point_name] == 1
+                    else f"{p.point_name} ({p.point_id})"
+                ),
                 present_value=_default_present_value(ot, p),
                 units=units,
                 min_pres_value=p.min_pres_value,

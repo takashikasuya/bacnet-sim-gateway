@@ -108,6 +108,8 @@ def test_unit_mapping_known():
     assert to_bacnet_units("bar")[0] == "bars"
     assert to_bacnet_units("bars")[0] == "bars"
     assert to_bacnet_units("mbar")[0] == "millibars"
+    assert to_bacnet_units("lux")[0] == "luxes"
+    assert to_bacnet_units("lx")[0] == "luxes"
 
 
 def test_unit_mapping_unknown_falls_back_with_warning():
