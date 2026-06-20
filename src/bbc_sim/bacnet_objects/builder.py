@@ -7,8 +7,15 @@ explicitly typed (ADR-007).
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
+from bacpypes3.apdu import (
+    ConfirmedCOVNotificationRequest,
+    UnconfirmedCOVNotificationRequest,
+)
+from bacpypes3.basetypes import PropertyValue as _PropertyValue
+from bacpypes3.constructeddata import Any as _Any
 from bacpypes3.local.analog import (
     AnalogInputObject,
     AnalogOutputObject,
@@ -19,7 +26,7 @@ from bacpypes3.local.binary import (
     BinaryOutputObject,
     BinaryValueObject,
 )
-from bacpypes3.local.cov import GenericCriteria
+from bacpypes3.local.cov import COVDetection, GenericCriteria
 from bacpypes3.local.device import DeviceObject
 from bacpypes3.local.multistate import (
     MultiStateInputObject as _MultiStateInputObject,
@@ -38,6 +45,68 @@ class MultiStateOutputObject(_MultiStateOutputObject):
 
 class MultiStateValueObject(_MultiStateValueObject):
     _cov_criteria = GenericCriteria
+
+
+def _safe_send_cov_notifications(self, subscription=None) -> None:
+    """Patched COVDetection.send_cov_notifications.
+
+    Fixes bacpypes3 bug: under load, cancel_handle.when() - current_time can be
+    negative (timer elapsed but asyncio callback not yet fired), producing a
+    negative time_remaining that Unsigned.cast() rejects with ValueError("unsigned").
+    max(1, ...) clamps expired handles to 1 s, matching the original intent of the
+    "at least one second" guard.
+    """
+    if not self.cov_subscriptions:
+        return
+
+    list_of_values = []
+    for property_name in self.properties_reported:
+        list_of_values.append(
+            _PropertyValue(
+                propertyIdentifier=property_name,
+                value=_Any(getattr(self, property_name)),
+            )
+        )
+
+    notification_list = (
+        [subscription] if subscription is not None else self.cov_subscriptions
+    )
+    current_time = asyncio.get_running_loop().time()
+
+    device_object = None
+    for obj in self.obj._app.objectIdentifier.values():
+        if not isinstance(obj, DeviceObject):
+            continue
+        if device_object is not None:
+            raise RuntimeError("duplicate device object")
+        device_object = obj
+    if device_object is None:
+        raise RuntimeError("missing device object")
+
+    for cov in notification_list:
+        if not cov.cancel_handle:
+            time_remaining = 0
+        else:
+            time_remaining = max(1, int(cov.cancel_handle.when() - current_time))
+
+        request = (
+            ConfirmedCOVNotificationRequest()
+            if cov.confirmed
+            else UnconfirmedCOVNotificationRequest()
+        )
+
+        request.pduDestination = cov.client_addr
+        request.subscriberProcessIdentifier = cov.proc_id
+        request.initiatingDeviceIdentifier = device_object.objectIdentifier
+        request.monitoredObjectIdentifier = cov.obj_id
+        request.timeRemaining = time_remaining
+        request.listOfValues = list_of_values
+
+        self.obj._app.cov_notification(cov, request)
+
+
+COVDetection.send_cov_notifications = _safe_send_cov_notifications
+
 from bacpypes3.local.networkport import NetworkPortObject
 from bacpypes3.object import Object
 from bacpypes3.primitivedata import ObjectIdentifier
