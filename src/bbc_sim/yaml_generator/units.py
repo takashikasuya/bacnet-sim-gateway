@@ -20,6 +20,10 @@ _UNIT_MAP: dict[str, str] = {
     "ppm": "partsPerMillion",
     "lux": "luxUnits",
     "lx": "luxUnits",
+    "m/s": "metersPerSecond",
+    "bar": "bars",
+    "bars": "bars",
+    "mbar": "millibars",
 }
 
 NO_UNITS = "noUnits"

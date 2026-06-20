@@ -14,6 +14,7 @@ from bbc_sim.models import (
     BacnetObjectSpec,
     BacnetObjectType,
     BbcConfig,
+    MultiDeviceConfig,
     NetworkConfig,
     SbcoPoint,
     SimulatorConfig,
@@ -165,3 +166,34 @@ def generate_config(
         objects=objects,
     )
     return config, warnings
+
+
+def generate_multi_device_config(
+    points: list[SbcoPoint],
+    *,
+    base_bbc_id: str,
+    base_device_id: int,
+    object_name: str = "Local Virtual B-BC",
+) -> tuple[MultiDeviceConfig, list[str]]:
+    """Build a MultiDeviceConfig from points grouped by device_id_bacnet (ADR-011).
+
+    Instance numbers are scoped per-device, so same instance_no_bacnet across
+    devices is valid and produces no collision warnings.
+    """
+    groups: dict[str, list[SbcoPoint]] = defaultdict(list)
+    for p in points:
+        groups[p.device_id_bacnet].append(p)
+
+    all_warnings: list[str] = []
+    device_configs: list[SimulatorConfig] = []
+    for offset, (device_id_bacnet_key, group) in enumerate(groups.items()):
+        cfg, warnings = generate_config(
+            group,
+            bbc_id=f"{base_bbc_id}-{offset}",
+            device_id=base_device_id + offset,
+            object_name=device_id_bacnet_key or f"{object_name}-{offset}",
+        )
+        all_warnings.extend(warnings)
+        device_configs.append(cfg)
+
+    return MultiDeviceConfig(devices=device_configs), all_warnings

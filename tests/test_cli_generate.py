@@ -85,6 +85,46 @@ def test_generate_yaml_output_is_self_validated(sample_pointlist, tmp_path):
     assert runner.invoke(app, ["validate", "-c", str(out)]).exit_code == 0
 
 
+def _mixed_csv(tmp_path: object) -> object:
+    """CSV with 2 BACnet rows and 1 row that has no device_id_bacnet."""
+    header = (
+        "gateway_id,device_id,device_name,device_type,site,building,floor,"
+        "installation_area,target_area,panel,point_type,point_specification,point_id,"
+        "point_name,writable,interval,unit,max_pres_value,min_pres_value,labels,scale,"
+        "tags,supplier,owner,description,local_id,device_id_bacnet,instance_no_bacnet,"
+        "object_type_bacnet"
+    )
+    rows = [
+        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_BAC1,Temp A,false,60,℃,50,-10,,1.0,,,,,L1,BAC1,1,Analog-Input",
+        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_BAC2,Temp B,false,60,℃,50,-10,,1.0,,,,,L2,BAC1,2,Analog-Input",
+        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_NON,Non-BACnet,false,60,℃,50,-10,,1.0,,,,,L3,,, ",
+    ]
+    path = tmp_path / "mixed.csv"
+    path.write_text(header + "\n" + "\n".join(rows) + "\n", encoding="utf-8")
+    return path
+
+
+def test_default_filter_skips_non_bacnet_rows(tmp_path):
+    csv = _mixed_csv(tmp_path)
+    out = tmp_path / "sim.yaml"
+    result = runner.invoke(app, ["generate-yaml", "-i", str(csv), "-o", str(out)])
+    assert result.exit_code == 0, result.output
+    cfg = load_config(out)
+    assert len(cfg.objects) == 2
+    assert "skipped 1" in result.output
+
+
+def test_filter_all_includes_non_bacnet_rows(tmp_path):
+    csv = _mixed_csv(tmp_path)
+    out = tmp_path / "sim.yaml"
+    result = runner.invoke(
+        app, ["generate-yaml", "-i", str(csv), "-o", str(out), "--point-filter", "all"]
+    )
+    assert result.exit_code == 0, result.output
+    cfg = load_config(out)
+    assert len(cfg.objects) == 3
+
+
 def test_inference_emits_warning(sample_pointlist, tmp_path):
     # PT002/PT003/PT005 lack object_type_bacnet -> inference warnings on stderr.
     out = tmp_path / "simulator.yaml"
