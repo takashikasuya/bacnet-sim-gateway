@@ -18,8 +18,12 @@ _UNIT_MAP: dict[str, str] = {
     "pa": "pascals",
     "m3/h": "cubicMetersPerHour",
     "ppm": "partsPerMillion",
-    "lux": "luxUnits",
-    "lx": "luxUnits",
+    "lux": "luxes",
+    "lx": "luxes",
+    "m/s": "metersPerSecond",
+    "bar": "bars",
+    "bars": "bars",
+    "mbar": "millibars",
 }
 
 NO_UNITS = "noUnits"

@@ -104,6 +104,12 @@ def test_unit_mapping_known():
     assert to_bacnet_units("℃")[0] == "degreesCelsius"
     assert to_bacnet_units("%RH")[0] == "percentRelativeHumidity"
     assert to_bacnet_units("ppm")[0] == "partsPerMillion"
+    assert to_bacnet_units("m/s")[0] == "metersPerSecond"
+    assert to_bacnet_units("bar")[0] == "bars"
+    assert to_bacnet_units("bars")[0] == "bars"
+    assert to_bacnet_units("mbar")[0] == "millibars"
+    assert to_bacnet_units("lux")[0] == "luxes"
+    assert to_bacnet_units("lx")[0] == "luxes"
 
 
 def test_unit_mapping_unknown_falls_back_with_warning():

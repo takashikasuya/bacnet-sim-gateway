@@ -14,6 +14,7 @@ from bbc_sim.models import (
     BacnetObjectSpec,
     BacnetObjectType,
     BbcConfig,
+    MultiDeviceConfig,
     NetworkConfig,
     SbcoPoint,
     SimulatorConfig,
@@ -85,11 +86,13 @@ def generate_config(
     bbc_id: str,
     device_id: int,
     object_name: str = "Local Virtual B-BC",
+    default_update_mode: str | None = None,
 ) -> tuple[SimulatorConfig, list[str]]:
     """Build a SimulatorConfig from points (aggregated). Returns (config, warnings).
 
     `bbc_id` and `device_id` are supplied by the caller (CLI) and never derived from
-    `gateway_id` (ADR-003).
+    `gateway_id` (ADR-003).  `default_update_mode` is applied to every object whose
+    `update.mode` is not already set by the point list (e.g. random_walk, sinusoidal).
     """
     warnings: list[str] = []
     pairs: list[tuple[SbcoPoint, BacnetObjectType]] = []
@@ -101,7 +104,13 @@ def generate_config(
     instances, instance_warnings = _assign_instances(pairs)
     warnings.extend(instance_warnings)
 
+    # Pre-compute which point_names are duplicated within this device so we can
+    # disambiguate objectName (BACnet requires uniqueness within a Device).
+    from collections import Counter as _Counter
+    _name_counts = _Counter(p.point_name for p, _ in pairs)
+
     objects: list[BacnetObjectSpec] = []
+    _name_seen: _Counter = _Counter()
     for p, ot in pairs:
         units = None
         if ot.is_analog:
@@ -131,7 +140,11 @@ def generate_config(
                 point_id=p.point_id,
                 object_type=ot,
                 object_instance=instances[p.point_id],
-                object_name=p.point_name,
+                object_name=(
+                    p.point_name
+                    if _name_counts[p.point_name] == 1
+                    else f"{p.point_name} ({p.point_id})"
+                ),
                 present_value=_default_present_value(ot, p),
                 units=units,
                 min_pres_value=p.min_pres_value,
@@ -142,7 +155,10 @@ def generate_config(
                 scale=p.scale,
                 writable=p.writable,
                 description=p.description,
-                update=UpdateConfig(interval=p.interval),
+                update=UpdateConfig(
+                    interval=p.interval,
+                    mode=default_update_mode or None,
+                ),
                 tags=tags,
                 metadata={
                     "gateway_id": p.gateway_id,
@@ -165,3 +181,36 @@ def generate_config(
         objects=objects,
     )
     return config, warnings
+
+
+def generate_multi_device_config(
+    points: list[SbcoPoint],
+    *,
+    base_bbc_id: str,
+    base_device_id: int,
+    object_name: str = "Local Virtual B-BC",
+    default_update_mode: str | None = None,
+) -> tuple[MultiDeviceConfig, list[str]]:
+    """Build a MultiDeviceConfig from points grouped by device_id_bacnet (ADR-011).
+
+    Instance numbers are scoped per-device, so same instance_no_bacnet across
+    devices is valid and produces no collision warnings.
+    """
+    groups: dict[str, list[SbcoPoint]] = defaultdict(list)
+    for p in points:
+        groups[p.device_id_bacnet].append(p)
+
+    all_warnings: list[str] = []
+    device_configs: list[SimulatorConfig] = []
+    for offset, (device_id_bacnet_key, group) in enumerate(groups.items()):
+        cfg, warnings = generate_config(
+            group,
+            bbc_id=f"{base_bbc_id}-{offset}",
+            device_id=base_device_id + offset,
+            object_name=device_id_bacnet_key or f"{object_name}-{offset}",
+            default_update_mode=default_update_mode,
+        )
+        all_warnings.extend(warnings)
+        device_configs.append(cfg)
+
+    return MultiDeviceConfig(devices=device_configs), all_warnings

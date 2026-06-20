@@ -35,6 +35,13 @@ class PointListError(Exception):
     """Raised when an SBCO point list cannot be read (structural error)."""
 
 
+class PointFilter(StrEnum):
+    """Controls which CSV rows generate-yaml includes."""
+
+    bacnet = "bacnet"  # only rows where device_id_bacnet is non-empty (default)
+    all = "all"  # every row regardless of device_id_bacnet
+
+
 class RuntimeMode(StrEnum):
     """Value-source mode (operating-modes.md). Orthogonal to device-mapping mode."""
 
@@ -206,3 +213,18 @@ class SimulatorConfig:
     network: NetworkConfig
     objects: list[BacnetObjectSpec] = field(default_factory=list)
     mode: RuntimeMode = RuntimeMode.simulator
+
+
+class DeviceMappingMode(StrEnum):
+    """Device-mapping axis (ADR-011). Orthogonal to RuntimeMode."""
+
+    aggregated = "aggregated"
+    multi_device = "multi-device"
+
+
+@dataclass
+class MultiDeviceConfig:
+    """Container for multi-device mode output (ADR-011 MVP-2)."""
+
+    devices: list[SimulatorConfig] = field(default_factory=list)
+    device_mapping: DeviceMappingMode = DeviceMappingMode.multi_device

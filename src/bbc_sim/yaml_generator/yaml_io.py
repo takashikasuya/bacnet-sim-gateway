@@ -19,6 +19,7 @@ from bbc_sim.models import (
     BindingDirection,
     BindingMapping,
     BindingSpec,
+    MultiDeviceConfig,
     NetworkConfig,
     RuntimeMode,
     SimulatorConfig,
@@ -233,7 +234,49 @@ def validate_config(config: SimulatorConfig) -> list[str]:
 
 def validate_yaml(path: str | Path) -> list[str]:
     try:
-        config = load_config(path)
-    except (KeyError, ValueError, TypeError, AttributeError, yaml.YAMLError) as exc:
+        data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
         return [f"invalid simulator.yaml: {exc}"]
-    return validate_config(config)
+    try:
+        if "devices" in data:
+            return validate_multi_device_config(load_multi_device_config(path))
+        return validate_config(dict_to_config(data))
+    except (KeyError, ValueError, TypeError, AttributeError) as exc:
+        return [f"invalid simulator.yaml: {exc}"]
+
+
+# ---------------------------------------------------------------------------
+# Multi-device YAML (ADR-011 multi-device mode)
+# ---------------------------------------------------------------------------
+
+def dump_multi_device_config(config: MultiDeviceConfig, path: str | Path) -> None:
+    data = {
+        "device_mapping": config.device_mapping.value,
+        "devices": [config_to_dict(d) for d in config.devices],
+    }
+    Path(path).write_text(
+        yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
+def load_multi_device_config(path: str | Path) -> MultiDeviceConfig:
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    return MultiDeviceConfig(
+        devices=[dict_to_config(d) for d in (data.get("devices") or [])],
+    )
+
+
+def validate_multi_device_config(config: MultiDeviceConfig) -> list[str]:
+    """Validate each device independently; cross-device instance reuse is allowed."""
+    errors: list[str] = []
+    seen_device_ids: set[int] = set()
+    for i, dev in enumerate(config.devices):
+        if dev.bbc.device_id in seen_device_ids:
+            errors.append(
+                f"device[{i}] ({dev.bbc.bbc_id}): duplicate device_id {dev.bbc.device_id}"
+            )
+        seen_device_ids.add(dev.bbc.device_id)
+        for e in validate_config(dev):
+            errors.append(f"device[{i}] ({dev.bbc.bbc_id}): {e}")
+    return errors

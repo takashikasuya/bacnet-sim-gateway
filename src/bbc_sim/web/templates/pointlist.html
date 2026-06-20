@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}点リスト — bbc-sim Admin{% endblock %}
+{% block title %}ポイントリスト — bbc-sim Admin{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1>点リスト / 再読込</h1>
+  <h1>ポイントリスト / 再読込</h1>
   <button class="btn-sm ctx-help-btn" data-page="pointlist">?</button>
 </div>
 
@@ -16,7 +16,7 @@
 </div>
 
 <div class="action-card">
-  <h3>点リスト再読込</h3>
+  <h3>ポイントリスト再読込</h3>
   <p class="note">⚠️ YAML を再読込し差分を適用します。構造変更（object_type / object_instance の変更）は再起動が必要です。</p>
   <button class="btn-danger" onclick="reloadPointlist()">再読込を実行</button>
   <div id="reload-result"></div>
@@ -25,7 +25,7 @@
 {% block scripts %}
 <script>
 async function reloadPointlist() {
-  if (!confirm('点リストを再読込します。よろしいですか？')) return;
+  if (!confirm('ポイントリストを再読込します。よろしいですか？')) return;
   const res = await fetch('/ui/pointlist/reload', {method: 'POST'});
   document.getElementById('reload-result').innerHTML = await res.text();
 }

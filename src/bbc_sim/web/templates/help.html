@@ -13,7 +13,7 @@
   <a href="#bindings">バインディング</a> |
   <a href="#status">接続状態</a> |
   <a href="#logs">ログ</a> |
-  <a href="#pointlist">点リスト</a> |
+  <a href="#pointlist">ポイントリスト</a> |
   <a href="#destructive">破壊的操作</a> |
   <a href="#workflow">典型的な運用フロー</a>
 </nav>
@@ -24,7 +24,7 @@
   BACnet/IP で公開します。実設備なしに上流システム（Building OS / Eclipse Hono / Ditto）との
   結合試験が可能です。</p>
   <div class="concept-diagram">
-    <div class="cd-box cd-south">SBCO CSV<br>点リスト</div>
+    <div class="cd-box cd-south">SBCO CSV<br>ポイントリスト</div>
     <div class="cd-arr">→</div>
     <div class="cd-box cd-core">bbc-sim<br>(B-BC)</div>
     <div class="cd-arr cd-north">↑ BACnet/IP<br><small>northbound</small></div>
@@ -94,7 +94,7 @@
 </section>
 
 <section id="pointlist">
-  <h2>点リスト画面</h2>
+  <h2>ポイントリスト画面</h2>
   <p>実行中の simulator.yaml を再読込して差分をライブ適用します。</p>
   <ul>
     <li><strong>検証</strong>: 再読込前に YAML を検証し、エラーがある場合は何も変更しません。</li>
@@ -112,7 +112,7 @@
       <tr><td>値の書込み</td><td>対象オブジェクトの presentValue が変わる。北向き ReadProperty で上流に見える。</td><td>再度書込みか YAML から再起動で初期値に戻る。</td></tr>
       <tr><td>Fault 注入</td><td>statusFlags / outOfService / eventState が変わる。上流に異常として見える。</td><td><code>fault: clear</code> で正常化。</td></tr>
       <tr><td>OutOfService</td><td>オブジェクトが Out-of-Service 状態に。書込みは引き続き受け付ける。</td><td><code>fault: clear</code> で解除。</td></tr>
-      <tr><td>点リスト再読込</td><td>オブジェクトの追加・削除・属性変更。削除されたオブジェクトは即座に消える。</td><td>YAML を元に戻して再読込か再起動。</td></tr>
+      <tr><td>ポイントリスト再読込</td><td>オブジェクトの追加・削除・属性変更。削除されたオブジェクトは即座に消える。</td><td>YAML を元に戻して再読込か再起動。</td></tr>
       <tr><td>モード変更</td><td>simulator ↔ gateway ↔ combined は再起動が必要。</td><td>CLI で <code>--mode</code> を指定して再起動。</td></tr>
     </tbody>
   </table>
@@ -127,7 +127,7 @@
     <li>デバイス/オブジェクト画面で値と型を確認。</li>
     <li>YABE などの BACnet Explorer から北向き接続を検証（接続状態画面でカウンタ確認）。</li>
     <li>異常系試験: オブジェクト詳細画面から Fault を注入し、上流の挙動を確認。</li>
-    <li>点リスト更新: YAML を編集し点リスト画面から再読込。</li>
+    <li>ポイントリスト更新: YAML を編集しポイントリスト画面から再読込。</li>
   </ol>
 </section>
 {% endblock %}
