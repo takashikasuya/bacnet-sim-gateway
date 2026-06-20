@@ -62,7 +62,7 @@ def _assert_html(resp, keyword: str | None = None) -> None:
         ("/ui/bindings", "バインディング"),
         ("/ui/status", "northbound"),
         ("/ui/logs", "ログ"),
-        ("/ui/pointlist", "点リスト"),
+        ("/ui/pointlist", "ポイントリスト"),
         ("/ui/help", "ヘルプ"),
     ],
 )
