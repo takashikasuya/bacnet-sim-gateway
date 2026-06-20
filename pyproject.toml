@@ -46,7 +46,7 @@ dev = [
     "jsonschema>=4.0",
     "grpcio>=1.81.0",  # down-link integration tests; matches committed stubs (>=1.81.0)
     "grpcio-tools>=1.81.0",  # regenerate proto stubs (scripts/gen_proto.sh)
-    "playwright>=1.60.0",
+    "playwright>=1.60.0; platform_machine != 'armv7l'",
 ]
 
 # Make `uv sync` (no flags) install the dev group explicitly, so lint/type/test
