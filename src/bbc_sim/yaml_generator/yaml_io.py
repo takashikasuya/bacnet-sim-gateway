@@ -199,6 +199,13 @@ def dict_to_config(d: dict[str, Any]) -> SimulatorConfig:
 
 def load_config(path: str | Path) -> SimulatorConfig:
     data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    if isinstance(data, dict) and "devices" in data:
+        raise ValueError(
+            f"{path} is a multi-device YAML (device_mapping: multi-device). "
+            "The runtime currently supports single-device configs only. "
+            "Re-generate without --device-mapping multi-device, or select one "
+            "device's section manually."
+        )
     return dict_to_config(data)
 
 
