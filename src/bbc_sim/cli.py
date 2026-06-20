@@ -40,6 +40,11 @@ def generate_yaml(
         "--device-mapping",
         help="'aggregated' (default): all points into one BACnet Device; 'multi-device': one Device per device_id_bacnet (ADR-011)",
     ),
+    default_update_mode: str | None = typer.Option(
+        None,
+        "--default-update-mode",
+        help="Apply an update mode to every object (random_walk / sinusoidal / replay / scenario). Omit to leave values static.",
+    ),
 ) -> None:
     """Generate simulator.yaml from an SBCO point list (ADR-011)."""
     points = read_point_list(input)
@@ -52,7 +57,10 @@ def generate_yaml(
 
     if device_mapping == DeviceMappingMode.multi_device:
         multi_config, warnings = generate_multi_device_config(
-            points, base_bbc_id=bbc_id, base_device_id=bacnet_device_id
+            points,
+            base_bbc_id=bbc_id,
+            base_device_id=bacnet_device_id,
+            default_update_mode=default_update_mode,
         )
         for w in warnings:
             typer.secho(f"warning: {w}", fg=typer.colors.YELLOW, err=True)
@@ -66,7 +74,12 @@ def generate_yaml(
         typer.echo(f"wrote {output} ({len(multi_config.devices)} devices, {total} objects)")
         return
 
-    config, warnings = generate_config(points, bbc_id=bbc_id, device_id=bacnet_device_id)
+    config, warnings = generate_config(
+        points,
+        bbc_id=bbc_id,
+        device_id=bacnet_device_id,
+        default_update_mode=default_update_mode,
+    )
     # Inference notes are warnings; structural validation failures must fail the command
     # so automation never treats an unusable simulator.yaml as a success.
     for w in warnings:
