@@ -1,3 +1,6 @@
+# Sample / fictional configuration — all identifiers (building, device, vendor,
+# IDs, areas) are made-up placeholders, not real-world data. Copy and edit this
+# file for your own simulator. See docs/ for the schema.
 bbc:
   bbc_id: bbc-local-001
   device_id: 1001

@@ -1,6 +1,6 @@
 # Backlog — Index
 
-製品要求は `PRD-v1.5.md`（何を・なぜ・どこまで）。Epic は MVP フェーズに対応。
+製品要求は `PRD.md`（何を・なぜ・どこまで）。Epic は MVP フェーズに対応。
 
 ## Epics
 

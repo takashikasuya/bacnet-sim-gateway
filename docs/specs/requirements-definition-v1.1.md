@@ -1,7 +1,7 @@
 # SBCO BACnet B-BC Simulator 要件定義書 v1.1
 
 > **位置づけ**: 本書は実装方式・データ構造・CLI 仕様・試験シナリオの **設計 (Specification) の正** とする。
-> 上位の製品要求は `../backlog/PRD-v1.5.md` を参照。設計判断の根拠は `../adr/` を参照。
+> 上位の製品要求は `../backlog/PRD.md` を参照。設計判断の根拠は `../adr/` を参照。
 
 ---
 

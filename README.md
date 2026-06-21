@@ -4,9 +4,23 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
+> **Status: `v0.1.0-alpha` — experimental.** For development, CI, and integration
+> testing only. **Not a production BACnet controller; not BTL-certified.** APIs,
+> config schema, and CLI may change during the `0.x` series. Runs and is tested on
+> **Python 3.12** (Ubuntu CI; Raspberry Pi ARM/ARM64 first-class).
+
 実設備がなくても、**SBCO 標準ポイントリスト 1 つ**から標準準拠の仮想 BACnet B-BC を生成し、
 **BACnet/IP（北向き）** で公開する統合シミュレータ兼プロトコル変換ゲートウェイです。
 Raspberry Pi（ARM/ARM64）でのネイティブ実行を第一級でサポートします（Docker は任意）。
+
+**想定ユーザー:** Building OS 開発者 / BACnet ゲートウェイ開発者 / BEMS・BAS の結合試験・検証担当者。
+実設備なしで BACnet/IP の北向き挙動を再現し、上位システムの結合試験を回したい人に向けたツールです。
+
+```
+SBCO point list (CSV) ──▶ YAML (intermediate model) ──▶ Virtual B-BC
+                                                          ├─ Northbound: BACnet/IP (UDP 47808)
+                                                          └─ Southbound: MQTT / ZeroMQ (gateway mode)
+```
 
 - **Simulator モード** — 値を内部生成して仮想 B-BC を BACnet/IP に公開（上位システムの結合試験用）
 - **Gateway モード** — 南向きの実データを BACnet オブジェクト化して北向きへ公開（実装済み: **MQTT / ZeroMQ**、CI 用 `memory://`。WoT / gRPC は設計上の対象でロードマップ）
@@ -165,7 +179,7 @@ uv run bbc-sim run -c config/simulator.yaml --mode gateway --transport memory://
 
 ### BOWS コネクタ（BACnet → Building OS, EP-008）
 
-仮想 B-BC を BACnet で読み取り、テレメトリを Building OS（`gutp-building-os-oss`）の
+仮想 B-BC を BACnet で読み取り、テレメトリを Building OS（[`gutp-building-os-oss`](#関連プロジェクト)）の
 BACnet ネイティブスキーマ `bacnet-device-message` で MQTT へ供給します（下流の独立コネクタ, ADR-014）。
 
 ```bash
@@ -249,6 +263,20 @@ docker compose -f docker/docker-compose.yml up --build
 docker compose -f docker/docker-compose.integration.yml up --build
 ```
 
+> **BACnet/IP × Docker の注意:** BACnet/IP は **UDP 47808** とブロードキャストを使うため
+> `network_mode: host` が必要です。host ネットワークは **Linux のみ**有効で、**macOS / Windows**
+> の Docker Desktop はホストの UDP ブロードキャストを透過しないため Who-Is/I-Am が届きません
+> （これらの OS ではネイティブ実行を推奨）。ホスト側で 47808 を他の BACnet アプリが
+> 占有していないか確認してください。詳細は [`docs/troubleshooting.md`](docs/troubleshooting.md)。
+
+---
+
+## 関連プロジェクト
+
+- **`gutp-building-os-oss`** — 本 B-BC を BACnet で読み取り上位に取り込む Building OS 側の
+  関連 OSS（**別リポジトリとして公開**）。本リポジトリの docs・ADR が参照する `#159` / `#163`
+  などの issue 番号は、その関連リポジトリ側のものです。
+
 ---
 
 ## 開発
@@ -310,6 +338,10 @@ Vision → Memory → ADR → Backlog → Spec
 | Spec | [`docs/specs`](docs/specs) | どう振る舞うか |
 
 通信フローのシーケンス図: [`docs/specs/communication-sequences.md`](docs/specs/communication-sequences.md)。
+
+初見ユーザー向け: [ロードマップ](docs/roadmap.md) ・ [トラブルシューティング](docs/troubleshooting.md) ・
+[セキュリティ運用ノート](docs/security-notes.md)。貢献するには [`CONTRIBUTING.md`](CONTRIBUTING.md)、
+脆弱性報告は [`SECURITY.md`](SECURITY.md)。
 
 エージェント運用の契約は [`AGENTS.md`](AGENTS.md)（最初に読む）と [`CLAUDE.md`](CLAUDE.md)。
 
