@@ -61,18 +61,14 @@ async def test_multistate_rounded_to_int(fake_bacnet_app, value: float, expected
 @pytest.mark.parametrize("priority", [0, 17, -1, None])
 async def test_out_of_range_priority_is_dropped(fake_bacnet_app, priority: int | None) -> None:
     app = fake_bacnet_app()
-    await CommandExecutor(app, "t", point_registry=_REGISTRY).execute(
-        _cmd("p-av-7", 1.0, priority)
-    )
+    await CommandExecutor(app, "t", point_registry=_REGISTRY).execute(_cmd("p-av-7", 1.0, priority))
     assert app.calls[0][4] is None
 
 
 @pytest.mark.parametrize("priority", [1, 8, 16])
 async def test_valid_priority_passed_through(fake_bacnet_app, priority: int) -> None:
     app = fake_bacnet_app()
-    await CommandExecutor(app, "t", point_registry=_REGISTRY).execute(
-        _cmd("p-av-7", 1.0, priority)
-    )
+    await CommandExecutor(app, "t", point_registry=_REGISTRY).execute(_cmd("p-av-7", 1.0, priority))
     assert app.calls[0][4] == priority
 
 

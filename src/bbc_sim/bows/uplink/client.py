@@ -11,14 +11,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
 from bbc_sim.bows.downlink.backoff import reconnect_delays
+from bbc_sim.bows.models import Reading
 from bbc_sim.bows.point_registry import PointRegistry
 from bbc_sim.bows.uplink.encoder import encode_telemetry_frames
-from bbc_sim.bows.models import Reading
 
 _log = logging.getLogger(__name__)
 
@@ -73,9 +73,7 @@ def _mtls_pems() -> tuple[bytes | None, bytes, bytes]:
     cert = _read_pem(os.environ.get("BOWS_INGRESS_TLS_CERT"))
     key = _read_pem(os.environ.get("BOWS_INGRESS_TLS_KEY"))
     if cert is None or key is None:
-        raise RuntimeError(
-            "mTLS requires BOWS_INGRESS_TLS_CERT and BOWS_INGRESS_TLS_KEY"
-        )
+        raise RuntimeError("mTLS requires BOWS_INGRESS_TLS_CERT and BOWS_INGRESS_TLS_KEY")
     return _read_pem(os.environ.get("BOWS_INGRESS_TLS_CA")), cert, key
 
 

@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 
 import pytest
 
-from bbc_sim.bows.models import BowsConfig, Reading
 from bbc_sim.bows.point_registry import PointRegistry
 from bbc_sim.bows.uplink.client import GatewayIngressClient, IngressConfig
 from bbc_sim.models import BacnetObjectSpec, BacnetObjectType

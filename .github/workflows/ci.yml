@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
     branches: [main]
+
+# Least-privilege default token (read-only); no job needs write access.
+permissions:
+  contents: read
 
 jobs:
   test:

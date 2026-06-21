@@ -17,9 +17,7 @@ def _spec(point_id: str, object_type: BacnetObjectType, instance: int) -> Bacnet
     )
 
 
-_REGISTRY = PointRegistry(
-    [_spec(f"p{i}", BacnetObjectType.analogValue, i) for i in range(3)]
-)
+_REGISTRY = PointRegistry([_spec(f"p{i}", BacnetObjectType.analogValue, i) for i in range(3)])
 
 
 async def _stream(cmds: list[ControlCommand]) -> AsyncIterator[ControlCommand]:

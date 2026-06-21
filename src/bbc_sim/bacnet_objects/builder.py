@@ -30,7 +30,11 @@ from bacpypes3.local.cov import COVDetection, GenericCriteria
 from bacpypes3.local.device import DeviceObject
 from bacpypes3.local.multistate import (
     MultiStateInputObject as _MultiStateInputObject,
+)
+from bacpypes3.local.multistate import (
     MultiStateOutputObject as _MultiStateOutputObject,
+)
+from bacpypes3.local.multistate import (
     MultiStateValueObject as _MultiStateValueObject,
 )
 
@@ -68,9 +72,7 @@ def _safe_send_cov_notifications(self, subscription=None) -> None:
             )
         )
 
-    notification_list = (
-        [subscription] if subscription is not None else self.cov_subscriptions
-    )
+    notification_list = [subscription] if subscription is not None else self.cov_subscriptions
     current_time = asyncio.get_running_loop().time()
 
     device_object = None
@@ -107,11 +109,11 @@ def _safe_send_cov_notifications(self, subscription=None) -> None:
 
 COVDetection.send_cov_notifications = _safe_send_cov_notifications
 
-from bacpypes3.local.networkport import NetworkPortObject
-from bacpypes3.object import Object
-from bacpypes3.primitivedata import ObjectIdentifier
+from bacpypes3.local.networkport import NetworkPortObject  # noqa: E402  (after COV monkeypatch)
+from bacpypes3.object import Object  # noqa: E402
+from bacpypes3.primitivedata import ObjectIdentifier  # noqa: E402
 
-from bbc_sim.models import (
+from bbc_sim.models import (  # noqa: E402
     BacnetObjectSpec,
     BacnetObjectType,
     BbcConfig,

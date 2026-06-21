@@ -95,9 +95,9 @@ def _mixed_csv(tmp_path: object) -> object:
         "object_type_bacnet"
     )
     rows = [
-        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_BAC1,Temp A,false,60,℃,50,-10,,1.0,,,,,L1,BAC1,1,Analog-Input",
-        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_BAC2,Temp B,false,60,℃,50,-10,,1.0,,,,,L2,BAC1,2,Analog-Input",
-        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_NON,Non-BACnet,false,60,℃,50,-10,,1.0,,,,,L3,,, ",
+        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_BAC1,Temp A,false,60,℃,50,-10,,1.0,,,,,L1,BAC1,1,Analog-Input",  # noqa: E501
+        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_BAC2,Temp B,false,60,℃,50,-10,,1.0,,,,,L2,BAC1,2,Analog-Input",  # noqa: E501
+        "GW1,D1,d,t,s,b,1F,a,a,,Temperature,Measurement,PT_NON,Non-BACnet,false,60,℃,50,-10,,1.0,,,,,L3,,, ",  # noqa: E501
     ]
     path = tmp_path / "mixed.csv"
     path.write_text(header + "\n" + "\n".join(rows) + "\n", encoding="utf-8")

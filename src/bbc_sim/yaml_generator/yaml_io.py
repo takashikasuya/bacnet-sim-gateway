@@ -256,6 +256,7 @@ def validate_yaml(path: str | Path) -> list[str]:
 # Multi-device YAML (ADR-011 multi-device mode)
 # ---------------------------------------------------------------------------
 
+
 def dump_multi_device_config(config: MultiDeviceConfig, path: str | Path) -> None:
     data = {
         "device_mapping": config.device_mapping.value,
