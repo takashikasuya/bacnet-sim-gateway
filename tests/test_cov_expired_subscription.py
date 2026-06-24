@@ -13,21 +13,19 @@ import asyncio
 from unittest.mock import MagicMock
 
 import pytest
+from bacpypes3.local.cov import GenericCriteria
+from bacpypes3.local.device import DeviceObject
 
 # builder must be imported before bacpypes3.local.cov so the monkey-patch is
 # applied before GenericCriteria is used in these tests.
 import bbc_sim.bacnet_objects.builder  # noqa: F401
-from bacpypes3.local.cov import GenericCriteria
-from bacpypes3.local.device import DeviceObject
 
 
 def _make_detection(sub, *, expired: bool):
     """Build a minimal GenericCriteria instance with one mock subscription."""
     loop = asyncio.get_event_loop()
     sub.cancel_handle = MagicMock()
-    sub.cancel_handle.when.return_value = (
-        loop.time() - 30.0 if expired else loop.time() + 60.0
-    )
+    sub.cancel_handle.when.return_value = loop.time() - 30.0 if expired else loop.time() + 60.0
     sub.confirmed = False
     sub.client_addr = "127.0.0.1"
     sub.proc_id = 42

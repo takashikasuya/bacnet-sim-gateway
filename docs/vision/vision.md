@@ -1,6 +1,6 @@
 # Vision — SBCO BACnet B-BC Simulator / Gateway
 
-> 出典: PRD v1.5 §1–2（`../backlog/PRD-v1.5.md`）。本ファイルは「なぜ作るか」の要約。
+> 出典: PRD v1.5 §1–2（`../backlog/PRD.md`）。本ファイルは「なぜ作るか」の要約。
 
 ## Why we build this
 

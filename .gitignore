@@ -19,6 +19,14 @@ build/
 # Env / secrets
 .env
 .env.*
+# Safety net for credentials / TLS material (do not commit real secrets)
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*
+*secret*.yaml
+*secret*.yml
 
 # OS / editor
 .DS_Store

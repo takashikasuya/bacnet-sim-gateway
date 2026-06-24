@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from bbc_sim.cli import app
@@ -17,6 +16,7 @@ runner = CliRunner()
 # ---------------------------------------------------------------------------
 # Shared fixture helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_multi_device_csv(tmp_path: Path) -> Path:
     """CSV with 4 points across 2 BACnet devices (DEV-A and DEV-B).
@@ -32,11 +32,11 @@ def _make_multi_device_csv(tmp_path: Path) -> Path:
         "object_type_bacnet"
     )
     rows = [
-        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-A-AI-1,Temp A1,false,60,℃,50,-10,,1.0,,,,,L1,DEV-A,1,Analog-Input",
-        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-A-AI-2,Temp A2,false,60,℃,50,-10,,1.0,,,,,L2,DEV-A,2,Analog-Input",
+        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-A-AI-1,Temp A1,false,60,℃,50,-10,,1.0,,,,,L1,DEV-A,1,Analog-Input",  # noqa: E501
+        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-A-AI-2,Temp A2,false,60,℃,50,-10,,1.0,,,,,L2,DEV-A,2,Analog-Input",  # noqa: E501
         # DEV-B reuses instance 1 and 2 — collision in aggregated, fine in multi-device
-        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-B-AI-1,Temp B1,false,60,℃,50,-10,,1.0,,,,,L3,DEV-B,1,Analog-Input",
-        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-B-AI-2,Temp B2,false,60,℃,50,-10,,1.0,,,,,L4,DEV-B,2,Analog-Input",
+        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-B-AI-1,Temp B1,false,60,℃,50,-10,,1.0,,,,,L3,DEV-B,1,Analog-Input",  # noqa: E501
+        "GW1,D1,d,AHU,s,b,1F,a,a,,Temperature,Measurement,DEV-B-AI-2,Temp B2,false,60,℃,50,-10,,1.0,,,,,L4,DEV-B,2,Analog-Input",  # noqa: E501
     ]
     path = tmp_path / "multi_device.csv"
     path.write_text(header + "\n" + "\n".join(rows) + "\n", encoding="utf-8")
@@ -46,6 +46,7 @@ def _make_multi_device_csv(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Cycle 1: grouping by device_id_bacnet
 # ---------------------------------------------------------------------------
+
 
 def test_multi_device_config_has_one_entry_per_bacnet_device(tmp_path):
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
@@ -61,6 +62,7 @@ def test_multi_device_config_has_one_entry_per_bacnet_device(tmp_path):
 # Cycle 2: no collision warnings for same instance_no across devices
 # ---------------------------------------------------------------------------
 
+
 def test_multi_device_produces_no_instance_collision_warnings(tmp_path):
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
 
@@ -75,6 +77,7 @@ def test_multi_device_produces_no_instance_collision_warnings(tmp_path):
 # ---------------------------------------------------------------------------
 # Cycle 3: instance_no_bacnet respected within each device
 # ---------------------------------------------------------------------------
+
 
 def test_multi_device_respects_instance_no_bacnet_per_device(tmp_path):
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
@@ -97,6 +100,7 @@ def test_multi_device_respects_instance_no_bacnet_per_device(tmp_path):
 # Cycle 4: device IDs assigned sequentially from base
 # ---------------------------------------------------------------------------
 
+
 def test_multi_device_assigns_device_ids_from_base(tmp_path):
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
 
@@ -111,6 +115,7 @@ def test_multi_device_assigns_device_ids_from_base(tmp_path):
 # ---------------------------------------------------------------------------
 # Cycle 5: YAML dump / load roundtrip
 # ---------------------------------------------------------------------------
+
 
 def test_multi_device_yaml_roundtrip(tmp_path):
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
@@ -133,6 +138,7 @@ def test_multi_device_yaml_roundtrip(tmp_path):
 # Cycle 6: validate_multi_device_config
 # ---------------------------------------------------------------------------
 
+
 def test_validate_multi_device_config_allows_cross_device_instance_reuse(tmp_path):
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
     from bbc_sim.yaml_generator.yaml_io import validate_multi_device_config
@@ -146,7 +152,13 @@ def test_validate_multi_device_config_allows_cross_device_instance_reuse(tmp_pat
 
 
 def test_validate_multi_device_config_rejects_intra_device_instance_duplicate(tmp_path):
-    from bbc_sim.models import BacnetObjectSpec, BbcConfig, MultiDeviceConfig, NetworkConfig, SimulatorConfig
+    from bbc_sim.models import (
+        BacnetObjectSpec,
+        BbcConfig,
+        MultiDeviceConfig,
+        NetworkConfig,
+        SimulatorConfig,
+    )
     from bbc_sim.yaml_generator.yaml_io import validate_multi_device_config
 
     def _ai(point_id, instance):
@@ -171,6 +183,7 @@ def test_validate_multi_device_config_rejects_intra_device_instance_duplicate(tm
 # Cycle 7: CLI --device-mapping multi-device
 # ---------------------------------------------------------------------------
 
+
 def test_cli_multi_device_mapping_produces_multi_device_yaml(tmp_path):
     from bbc_sim.yaml_generator.yaml_io import load_multi_device_config
 
@@ -180,11 +193,16 @@ def test_cli_multi_device_mapping_produces_multi_device_yaml(tmp_path):
         app,
         [
             "generate-yaml",
-            "-i", str(csv),
-            "-o", str(out),
-            "--device-mapping", "multi-device",
-            "--bbc-id", "bbc-local-001",
-            "--bacnet-device-id", "1001",
+            "-i",
+            str(csv),
+            "-o",
+            str(out),
+            "--device-mapping",
+            "multi-device",
+            "--bbc-id",
+            "bbc-local-001",
+            "--bacnet-device-id",
+            "1001",
         ],
     )
     assert result.exit_code == 0, result.output
@@ -200,9 +218,12 @@ def test_cli_multi_device_mapping_no_collision_warnings(tmp_path):
         app,
         [
             "generate-yaml",
-            "-i", str(csv),
-            "-o", str(out),
-            "--device-mapping", "multi-device",
+            "-i",
+            str(csv),
+            "-o",
+            str(out),
+            "--device-mapping",
+            "multi-device",
         ],
     )
     assert result.exit_code == 0, result.output
@@ -214,9 +235,8 @@ def test_cli_default_device_mapping_is_aggregated(tmp_path):
     csv = _make_multi_device_csv(tmp_path)
     out = tmp_path / "sim.yaml"
     from bbc_sim.yaml_generator.yaml_io import load_config
-    result = runner.invoke(
-        app, ["generate-yaml", "-i", str(csv), "-o", str(out)]
-    )
+
+    result = runner.invoke(app, ["generate-yaml", "-i", str(csv), "-o", str(out)])
     assert result.exit_code == 0, result.output
     cfg = load_config(out)
     assert len(cfg.objects) == 4  # still one flat device
@@ -226,22 +246,25 @@ def test_cli_default_device_mapping_is_aggregated(tmp_path):
 # Bug fixes
 # ---------------------------------------------------------------------------
 
+
 def test_load_multi_device_config_tolerates_null_devices(tmp_path):
     """devices: null in YAML must not raise TypeError."""
     import yaml
+
     from bbc_sim.yaml_generator.yaml_io import load_multi_device_config
 
     bad = tmp_path / "null_devices.yaml"
-    bad.write_text(yaml.safe_dump({"device_mapping": "multi-device", "devices": None}), encoding="utf-8")
+    bad.write_text(
+        yaml.safe_dump({"device_mapping": "multi-device", "devices": None}), encoding="utf-8"
+    )
     config = load_multi_device_config(bad)
     assert config.devices == []
 
 
 def test_validate_yaml_auto_detects_multi_device_format(tmp_path):
     """bbc-sim validate must not report 'invalid simulator.yaml: bbc' for multi-device YAML."""
-    from bbc_sim.yaml_generator.yaml_io import validate_yaml
     from bbc_sim.yaml_generator.generator import generate_multi_device_config
-    from bbc_sim.yaml_generator.yaml_io import dump_multi_device_config
+    from bbc_sim.yaml_generator.yaml_io import dump_multi_device_config, validate_yaml
 
     points = read_point_list(_make_multi_device_csv(tmp_path))
     config, _ = generate_multi_device_config(points, base_bbc_id="bbc-x", base_device_id=1001)

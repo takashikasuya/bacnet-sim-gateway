@@ -38,12 +38,18 @@ def generate_yaml(
     device_mapping: DeviceMappingMode = typer.Option(
         DeviceMappingMode.aggregated,
         "--device-mapping",
-        help="'aggregated' (default): all points into one BACnet Device; 'multi-device': one Device per device_id_bacnet (ADR-011)",
+        help=(
+            "'aggregated' (default): all points into one BACnet Device; "
+            "'multi-device': one Device per device_id_bacnet (ADR-011)"
+        ),
     ),
     default_update_mode: str | None = typer.Option(
         None,
         "--default-update-mode",
-        help="Apply an update mode to every object (random_walk / sinusoidal / replay / scenario). Omit to leave values static.",
+        help=(
+            "Apply an update mode to every object "
+            "(random_walk / sinusoidal / replay / scenario). Omit to leave values static."
+        ),
     ),
 ) -> None:
     """Generate simulator.yaml from an SBCO point list (ADR-011)."""
@@ -53,7 +59,9 @@ def generate_yaml(
         points = [p for p in points if p.device_id_bacnet]
         skipped = before - len(points)
         if skipped:
-            typer.echo(f"skipped {skipped} point(s) with no device_id_bacnet (--point-filter bacnet)")
+            typer.echo(
+                f"skipped {skipped} point(s) with no device_id_bacnet (--point-filter bacnet)"
+            )
 
     if device_mapping == DeviceMappingMode.multi_device:
         multi_config, warnings = generate_multi_device_config(

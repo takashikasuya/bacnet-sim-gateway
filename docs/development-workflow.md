@@ -1,6 +1,6 @@
 # Development Workflow
 
-> プロセス層。コードをどう作るかの運用ルール。設計の正は ADR/Spec、製品要求の正は PRD（`backlog/PRD-v1.5.md`）。本書はそれらを**どう実装に落とすか**だけを定める。AGENTS.md §3 の詳細版。
+> プロセス層。コードをどう作るかの運用ルール。設計の正は ADR/Spec、製品要求の正は PRD（`backlog/PRD.md`）。本書はそれらを**どう実装に落とすか**だけを定める。AGENTS.md §3 の詳細版。
 
 ## 0. 原則
 

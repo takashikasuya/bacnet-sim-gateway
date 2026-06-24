@@ -55,9 +55,7 @@ class CommandExecutor:
     async def execute(self, cmd: ControlCommand) -> ControlResult:
         resolved = self._registry.resolve_point_id(cmd.point_id)
         if resolved is None:
-            return ControlResult(
-                cmd.control_id, False, f"unknown point_id {cmd.point_id!r}"
-            )
+            return ControlResult(cmd.control_id, False, f"unknown point_id {cmd.point_id!r}")
         object_type, instance_no = resolved
         if object_type in _READ_ONLY_INPUT_TYPES:
             return ControlResult(

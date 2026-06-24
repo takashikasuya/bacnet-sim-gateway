@@ -7,7 +7,7 @@ metadata:
 
 # Architecture
 
-> 詳細は PRD v1.5 §4（`../backlog/PRD-v1.5.md`）と要件定義書 §3,§4（`../specs/requirements-definition-v1.1.md`）。
+> 詳細は PRD v1.5 §4（`../backlog/PRD.md`）と要件定義書 §3,§4（`../specs/requirements-definition-v1.1.md`）。
 
 ## 連携方向（最重要）
 

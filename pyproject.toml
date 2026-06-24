@@ -76,6 +76,8 @@ src = ["src", "tests"]
 extend-exclude = [
     "src/bbc_sim/bows/downlink/gateway_egress_pb2.py",
     "src/bbc_sim/bows/downlink/gateway_egress_pb2_grpc.py",
+    "src/bbc_sim/bows/uplink/gateway_ingress_pb2.py",
+    "src/bbc_sim/bows/uplink/gateway_ingress_pb2_grpc.py",
 ]
 
 [tool.ruff.lint]

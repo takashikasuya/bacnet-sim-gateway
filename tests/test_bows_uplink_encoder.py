@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-import pytest
-
 from bbc_sim.bows.models import Reading
 from bbc_sim.bows.point_registry import PointRegistry
 from bbc_sim.bows.uplink.encoder import encode_telemetry_frames

@@ -107,6 +107,7 @@ def generate_config(
     # Pre-compute which point_names are duplicated within this device so we can
     # disambiguate objectName (BACnet requires uniqueness within a Device).
     from collections import Counter as _Counter
+
     _name_counts = _Counter(p.point_name for p, _ in pairs)
 
     objects: list[BacnetObjectSpec] = []
